@@ -12,7 +12,7 @@ jobs:
   test-arm64:
     name: Test on native Arm64
     runs-on: ubuntu-24.04-arm
-    timeout-minutes: 20
+    timeout-minutes: 30
 
     steps:
       - name: Check out repository
@@ -31,8 +31,11 @@ jobs:
       - name: Install locked dependencies
         run: uv sync --locked --dev
 
-      - name: Provision pinned Whisper.cpp runtime
-        run: uv run python scripts/setup_whisper_runtime.py
+      - name: Generate Q5_1 model from full precision on Arm64
+        run: >-
+          uv run python scripts/setup_whisper_runtime.py
+          --comparison
+          --metadata-output artifacts/arm64-quantization.json
 
       - name: Capture native runtime evidence
         run: uv run python scripts/runtime_probe.py --require-arm64 --output artifacts/arm64-runtime.json
@@ -40,13 +43,44 @@ jobs:
       - name: Run test suite
         run: uv run pytest -q -p no:cacheprovider
 
-      - name: Benchmark local audio inference
-        run: uv run python scripts/benchmark_audio.py --output artifacts/arm64-whisper-benchmark.json
+      - name: Benchmark full-precision baseline
+        run: >-
+          uv run python scripts/benchmark_audio.py
+          --model models/whisper/ggml-tiny.en.bin
+          --label full-precision
+          --runs 5
+          --warmups 1
+          --output artifacts/arm64-baseline.json
+
+      - name: Benchmark ReliefRelay Q5_1 model
+        run: >-
+          uv run python scripts/benchmark_audio.py
+          --model models/whisper/ggml-tiny.en-q5_1-reliefrelay.bin
+          --label q5_1-reliefrelay
+          --runs 5
+          --warmups 1
+          --output artifacts/arm64-optimized.json
+
+      - name: Compare performance and validate quality
+        run: >-
+          uv run python scripts/compare_benchmarks.py
+          artifacts/arm64-baseline.json
+          artifacts/arm64-optimized.json
+          --quantization artifacts/arm64-quantization.json
+          --json-output artifacts/arm64-comparison.json
+          --markdown-output artifacts/arm64-comparison.md
+
+      - name: Publish benchmark summary
+        run: cat artifacts/arm64-comparison.md >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload Arm64 evidence
         uses: actions/upload-artifact@v7.0.1
         with:
-          name: arm64-runtime-evidence
+          name: arm64-optimization-evidence
           path: |
             artifacts/arm64-runtime.json
-            artifacts/arm64-whisper-benchmark.json
+            artifacts/arm64-quantization.json
+            artifacts/arm64-baseline.json
+            artifacts/arm64-optimized.json
+            artifacts/arm64-comparison.json
+            artifacts/arm64-comparison.md

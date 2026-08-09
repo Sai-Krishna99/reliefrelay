@@ -1,10 +1,14 @@
 from __future__ import annotations
 
+import argparse
 import hashlib
+import json
 import os
 import platform
+import subprocess
 import tarfile
 import tempfile
+import time
 import urllib.request
 import zipfile
 from dataclasses import dataclass
@@ -12,12 +16,23 @@ from pathlib import Path
 
 
 WHISPER_VERSION = "1.9.2"
-MODEL_NAME = "ggml-tiny.en-q5_1.bin"
-MODEL_URL = (
+OPTIMIZED_MODEL_NAME = "ggml-tiny.en-q5_1.bin"
+OPTIMIZED_MODEL_URL = (
     "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/"
-    f"{MODEL_NAME}?download=true"
+    f"{OPTIMIZED_MODEL_NAME}?download=true"
 )
-MODEL_SHA256 = "c77c5766f1cef09b6b7d47f21b546cbddd4157886b3b5d6d4f709e91e66c7c2b"
+OPTIMIZED_MODEL_SHA256 = (
+    "c77c5766f1cef09b6b7d47f21b546cbddd4157886b3b5d6d4f709e91e66c7c2b"
+)
+BASELINE_MODEL_NAME = "ggml-tiny.en.bin"
+BASELINE_MODEL_URL = (
+    "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/"
+    f"{BASELINE_MODEL_NAME}?download=true"
+)
+BASELINE_MODEL_SHA256 = (
+    "921e4cf8686fdd993dcd081a5da5b6c365bfde1162e72b08d75ac75289920b1f"
+)
+GENERATED_MODEL_NAME = "ggml-tiny.en-q5_1-reliefrelay.bin"
 
 
 @dataclass(frozen=True)
@@ -83,11 +98,72 @@ def extract_archive(archive: Path, destination: Path) -> None:
         tar_file.extractall(destination, filter="data")
 
 
-def setup(project_root: Path) -> None:
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Provision the Whisper.cpp runtime"
+    )
+    parser.add_argument(
+        "--comparison",
+        action="store_true",
+        help="Download the full model and produce a Q5_1 model locally",
+    )
+    parser.add_argument("--metadata-output", type=Path)
+    return parser.parse_args()
+
+
+def find_executable(runtime_directory: Path, stem: str) -> Path:
+    executable_name = f"{stem}.exe" if os.name == "nt" else stem
+    executables = list(runtime_directory.rglob(executable_name))
+    if len(executables) != 1:
+        raise RuntimeError(f"Expected one {executable_name}, found {len(executables)}")
+    if os.name != "nt":
+        executables[0].chmod(executables[0].stat().st_mode | 0o111)
+    return executables[0]
+
+
+def ensure_model(path: Path, url: str, expected_sha256: str) -> None:
+    if not path.exists() or sha256(path) != expected_sha256:
+        download(url, path, expected_sha256)
+
+
+def quantize_model(
+    quantizer_path: Path,
+    baseline_path: Path,
+    output_path: Path,
+) -> dict[str, object]:
+    output_path.unlink(missing_ok=True)
+    started_at = time.perf_counter()
+    subprocess.run(
+        [str(quantizer_path), str(baseline_path), str(output_path), "q5_1"],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    duration_seconds = round(time.perf_counter() - started_at, 3)
+    return {
+        "quantization": "q5_1",
+        "duration_seconds": duration_seconds,
+        "baseline_model": baseline_path.name,
+        "baseline_bytes": baseline_path.stat().st_size,
+        "baseline_sha256": sha256(baseline_path),
+        "optimized_model": output_path.name,
+        "optimized_bytes": output_path.stat().st_size,
+        "optimized_sha256": sha256(output_path),
+    }
+
+
+def setup(
+    project_root: Path,
+    *,
+    comparison: bool = False,
+    metadata_output: Path | None = None,
+) -> None:
     platform_key = (platform.system(), platform.machine())
     asset = RUNTIME_ASSETS.get(platform_key)
     if asset is None:
-        supported = ", ".join(f"{system}/{machine}" for system, machine in RUNTIME_ASSETS)
+        supported = ", ".join(
+            f"{system}/{machine}" for system, machine in RUNTIME_ASSETS
+        )
         raise SystemExit(f"Unsupported platform {platform_key}; supported: {supported}")
 
     runtime_directory = project_root / ".local" / "whisper"
@@ -98,19 +174,47 @@ def setup(project_root: Path) -> None:
         extract_archive(archive_path, runtime_directory)
 
     model_directory.mkdir(parents=True, exist_ok=True)
-    model_path = model_directory / MODEL_NAME
-    if not model_path.exists() or sha256(model_path) != MODEL_SHA256:
-        download(MODEL_URL, model_path, MODEL_SHA256)
+    cli_path = find_executable(runtime_directory, "whisper-cli")
 
-    executable_name = "whisper-cli.exe" if os.name == "nt" else "whisper-cli"
-    executables = list(runtime_directory.rglob(executable_name))
-    if len(executables) != 1:
-        raise RuntimeError(f"Expected one {executable_name}, found {len(executables)}")
-    if os.name != "nt":
-        executables[0].chmod(executables[0].stat().st_mode | 0o111)
-    print(f"Whisper runtime ready: {executables[0]}")
-    print(f"Whisper model ready: {model_path}")
+    if comparison:
+        baseline_path = model_directory / BASELINE_MODEL_NAME
+        optimized_path = model_directory / GENERATED_MODEL_NAME
+        ensure_model(baseline_path, BASELINE_MODEL_URL, BASELINE_MODEL_SHA256)
+        metadata = quantize_model(
+            find_executable(runtime_directory, "whisper-quantize"),
+            baseline_path,
+            optimized_path,
+        )
+        metadata.update(
+            {
+                "whisper_cpp_version": WHISPER_VERSION,
+                "architecture": platform.machine() or "unknown",
+            }
+        )
+        if metadata_output:
+            metadata_output.parent.mkdir(parents=True, exist_ok=True)
+            metadata_output.write_text(
+                json.dumps(metadata, indent=2) + "\n",
+                encoding="utf-8",
+            )
+        print(f"Whisper baseline ready: {baseline_path}")
+        print(f"ReliefRelay Q5_1 model ready: {optimized_path}")
+    else:
+        optimized_path = model_directory / OPTIMIZED_MODEL_NAME
+        ensure_model(
+            optimized_path,
+            OPTIMIZED_MODEL_URL,
+            OPTIMIZED_MODEL_SHA256,
+        )
+        print(f"Whisper model ready: {optimized_path}")
+
+    print(f"Whisper runtime ready: {cli_path}")
 
 
 if __name__ == "__main__":
-    setup(Path(__file__).resolve().parents[1])
+    arguments = parse_args()
+    setup(
+        Path(__file__).resolve().parents[1],
+        comparison=arguments.comparison,
+        metadata_output=arguments.metadata_output,
+    )

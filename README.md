@@ -35,17 +35,26 @@ flowchart LR
 The included benchmark contains three synthetic emergency scenarios, three
 voices, and three signal conditions: clear, radio, and severe.
 
-| AMD64 local baseline | Result |
-| --- | ---: |
-| Fixtures | 9 |
-| Mean inference time | 0.548 s |
-| Mean real-time factor | 0.06x |
-| Mean word error rate | 10.54% |
-| Structured-field accuracy | 100% |
+| AMD64 local reference | Full precision | Q5_1 | Change |
+| --- | ---: | ---: | ---: |
+| Model size | 74.10 MiB | 30.68 MiB | 58.60% smaller |
+| Median inference | 0.625 s | 0.550 s | 12.00% lower |
+| P95 inference | 0.695 s | 0.636 s | 8.49% lower |
+| Median real-time factor | 0.0753 | 0.0660 | 12.35% lower |
+| Mean word error rate | 11.23% | 10.54% | 0.69 pp lower |
+| Structured-field accuracy | 100% | 100% | preserved |
 
-These numbers are a development-machine baseline, not Arm64 results. The
-`Arm64 validation` GitHub Action provisions the same pinned runtime and emits a
-native Arm64 benchmark artifact for an honest comparison.
+These numbers are a development-machine reference, not Arm64 results. The
+`Arm64 validation` GitHub Action performs the submission-grade comparison on a
+native `ubuntu-24.04-arm` runner. It downloads the verified full-precision Tiny
+English model, generates ReliefRelay's Q5_1 model with `whisper-quantize` on
+Arm64, and benchmarks both models under identical conditions.
+
+The comparison uses one warmup plus five measured runs for each of the nine
+fixtures. It reports median and p95 inference latency, real-time factor, model
+size, word error rate, and structured-field accuracy. The job fails if model
+provenance cannot be verified or quantization degrades the permitted quality
+threshold.
 
 ## Quick start
 
@@ -96,6 +105,25 @@ uv run python scripts/benchmark_audio.py --output artifacts/whisper-benchmark.js
 The output records architecture, processor, model, per-fixture transcript,
 word error rate, inference time, real-time factor, and structured-field
 accuracy.
+
+Reproduce the full-precision versus Q5_1 comparison locally:
+
+```bash
+uv run python scripts/setup_whisper_runtime.py \
+  --comparison --metadata-output artifacts/quantization.json
+uv run python scripts/benchmark_audio.py \
+  --model models/whisper/ggml-tiny.en.bin --label full-precision \
+  --runs 5 --warmups 1 --output artifacts/baseline.json
+uv run python scripts/benchmark_audio.py \
+  --model models/whisper/ggml-tiny.en-q5_1-reliefrelay.bin \
+  --label q5_1-reliefrelay --runs 5 --warmups 1 \
+  --output artifacts/optimized.json
+uv run python scripts/compare_benchmarks.py \
+  artifacts/baseline.json artifacts/optimized.json \
+  --quantization artifacts/quantization.json \
+  --json-output artifacts/comparison.json \
+  --markdown-output artifacts/comparison.md
+```
 
 To require a native Arm64 environment:
 
