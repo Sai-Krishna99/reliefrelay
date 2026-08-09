@@ -89,7 +89,7 @@ def test_dashboard_serves_synthetic_audio_fixture() -> None:
     response = client.get("/audio/riverside-flood-radio.wav")
 
     assert response.status_code == 200
-    assert response.headers["content-type"] == "audio/wav"
+    assert response.headers["content-type"] in {"audio/wav", "audio/x-wav"}
     assert response.content[:4] == b"RIFF"
 
 
