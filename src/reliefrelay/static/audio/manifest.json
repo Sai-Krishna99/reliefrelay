@@ -1,0 +1,233 @@
+{
+  "schema_version": 1,
+  "description": "Synthetic emergency-radio benchmark; no real events or people.",
+  "generator": "scripts/generate_demo_audio.py",
+  "model": {
+    "name": "Kokoro-82M v1.0 int8",
+    "license": "Apache-2.0",
+    "source": "https://huggingface.co/hexgrad/Kokoro-82M",
+    "onnx_runner": "kokoro-onnx 0.5.0",
+    "onnx_runner_license": "MIT",
+    "onnx_runner_source": "https://github.com/thewh1teagle/kokoro-onnx",
+    "model_file_sha256": "6e742170d309016e5891a994e1ce1559c702a2ccd0075e67ef7157974f6406cb",
+    "voices_file_sha256": "bca610b8308e8d99f32e6fe4197e7ec01679264efed0cac9140fe9c29f1fbf7d"
+  },
+  "fixtures": [
+    {
+      "file": "riverside-flood-clear.wav",
+      "scenario_id": "riverside-flood",
+      "variant": "clear",
+      "voice": "af_sarah",
+      "speed": 1.03,
+      "transcript": "Unit 12 reporting from Riverside Shelter. We have rising flood water and twelve people need evacuation. Send a rescue team immediately.",
+      "expected": {
+        "location": "Riverside Shelter",
+        "incident_type": "flood",
+        "severity": "critical",
+        "people_affected": 12,
+        "requested_resource": "rescue team"
+      },
+      "sample_rate_hz": 16000,
+      "duration_seconds": 8.661,
+      "sha256": "5eda58d4da93b393cb0dbaab3d5929900c2b23d4732d96b7dc1a91535e580e27",
+      "processing": {
+        "name": "clear",
+        "noise_level": 0.001,
+        "dropout_count": 0,
+        "band_limited": false
+      }
+    },
+    {
+      "file": "riverside-flood-radio.wav",
+      "scenario_id": "riverside-flood",
+      "variant": "radio",
+      "voice": "af_sarah",
+      "speed": 1.03,
+      "transcript": "Unit 12 reporting from Riverside Shelter. We have rising flood water and twelve people need evacuation. Send a rescue team immediately.",
+      "expected": {
+        "location": "Riverside Shelter",
+        "incident_type": "flood",
+        "severity": "critical",
+        "people_affected": 12,
+        "requested_resource": "rescue team"
+      },
+      "sample_rate_hz": 16000,
+      "duration_seconds": 8.661,
+      "sha256": "d412f612c1440d18a9c52f129def27de7845af087d88fba2c0f086e196c96fd4",
+      "processing": {
+        "name": "radio",
+        "noise_level": 0.016,
+        "dropout_count": 1,
+        "band_limited": true
+      }
+    },
+    {
+      "file": "riverside-flood-severe.wav",
+      "scenario_id": "riverside-flood",
+      "variant": "severe",
+      "voice": "af_sarah",
+      "speed": 1.03,
+      "transcript": "Unit 12 reporting from Riverside Shelter. We have rising flood water and twelve people need evacuation. Send a rescue team immediately.",
+      "expected": {
+        "location": "Riverside Shelter",
+        "incident_type": "flood",
+        "severity": "critical",
+        "people_affected": 12,
+        "requested_resource": "rescue team"
+      },
+      "sample_rate_hz": 16000,
+      "duration_seconds": 8.661,
+      "sha256": "c1d4d1ae741481cab1857fcac692302ad0964ba754e7291c093927c19f22d99d",
+      "processing": {
+        "name": "severe",
+        "noise_level": 0.032,
+        "dropout_count": 3,
+        "band_limited": true
+      }
+    },
+    {
+      "file": "north-clinic-fire-clear.wav",
+      "scenario_id": "north-clinic-fire",
+      "variant": "clear",
+      "voice": "am_michael",
+      "speed": 0.98,
+      "transcript": "Medic 4 reporting from North Clinic. Fire in the east wing. Two patients trapped. Send a rescue team immediately.",
+      "expected": {
+        "location": "North Clinic",
+        "incident_type": "fire",
+        "severity": "critical",
+        "people_affected": 2,
+        "requested_resource": "rescue team"
+      },
+      "sample_rate_hz": 16000,
+      "duration_seconds": 8.149,
+      "sha256": "5a6e48d76665219c33eb733ed4f2563062823115e264a1e72600cd4917ce1e86",
+      "processing": {
+        "name": "clear",
+        "noise_level": 0.001,
+        "dropout_count": 0,
+        "band_limited": false
+      }
+    },
+    {
+      "file": "north-clinic-fire-radio.wav",
+      "scenario_id": "north-clinic-fire",
+      "variant": "radio",
+      "voice": "am_michael",
+      "speed": 0.98,
+      "transcript": "Medic 4 reporting from North Clinic. Fire in the east wing. Two patients trapped. Send a rescue team immediately.",
+      "expected": {
+        "location": "North Clinic",
+        "incident_type": "fire",
+        "severity": "critical",
+        "people_affected": 2,
+        "requested_resource": "rescue team"
+      },
+      "sample_rate_hz": 16000,
+      "duration_seconds": 8.149,
+      "sha256": "d32d771427560e9f497162e2bb09dad60ad7b9fe32519f0322a2f3eb7f8a30a2",
+      "processing": {
+        "name": "radio",
+        "noise_level": 0.016,
+        "dropout_count": 1,
+        "band_limited": true
+      }
+    },
+    {
+      "file": "north-clinic-fire-severe.wav",
+      "scenario_id": "north-clinic-fire",
+      "variant": "severe",
+      "voice": "am_michael",
+      "speed": 0.98,
+      "transcript": "Medic 4 reporting from North Clinic. Fire in the east wing. Two patients trapped. Send a rescue team immediately.",
+      "expected": {
+        "location": "North Clinic",
+        "incident_type": "fire",
+        "severity": "critical",
+        "people_affected": 2,
+        "requested_resource": "rescue team"
+      },
+      "sample_rate_hz": 16000,
+      "duration_seconds": 8.149,
+      "sha256": "7530c5e11fbc82ddd65e2db9d1e01852c3c92b35457e2606d384c0445c42fd93",
+      "processing": {
+        "name": "severe",
+        "noise_level": 0.032,
+        "dropout_count": 3,
+        "band_limited": true
+      }
+    },
+    {
+      "file": "harbor-school-medical-clear.wav",
+      "scenario_id": "harbor-school-medical",
+      "variant": "clear",
+      "voice": "af_nicole",
+      "speed": 1.05,
+      "transcript": "Team 7 reporting from Harbor School. Three people injured and conditions worsening. Send a medical team.",
+      "expected": {
+        "location": "Harbor School",
+        "incident_type": "medical",
+        "severity": "high",
+        "people_affected": 3,
+        "requested_resource": "medical team"
+      },
+      "sample_rate_hz": 16000,
+      "duration_seconds": 10.603,
+      "sha256": "4ffa991eb2dd5a9b4bb414c529aab5f1522733828bd336b76e15f339470c9389",
+      "processing": {
+        "name": "clear",
+        "noise_level": 0.001,
+        "dropout_count": 0,
+        "band_limited": false
+      }
+    },
+    {
+      "file": "harbor-school-medical-radio.wav",
+      "scenario_id": "harbor-school-medical",
+      "variant": "radio",
+      "voice": "af_nicole",
+      "speed": 1.05,
+      "transcript": "Team 7 reporting from Harbor School. Three people injured and conditions worsening. Send a medical team.",
+      "expected": {
+        "location": "Harbor School",
+        "incident_type": "medical",
+        "severity": "high",
+        "people_affected": 3,
+        "requested_resource": "medical team"
+      },
+      "sample_rate_hz": 16000,
+      "duration_seconds": 10.603,
+      "sha256": "4faff73a8379e78b6496990395d72f1e3354f0ef83f0a9a63299ac4413ed375f",
+      "processing": {
+        "name": "radio",
+        "noise_level": 0.016,
+        "dropout_count": 1,
+        "band_limited": true
+      }
+    },
+    {
+      "file": "harbor-school-medical-severe.wav",
+      "scenario_id": "harbor-school-medical",
+      "variant": "severe",
+      "voice": "af_nicole",
+      "speed": 1.05,
+      "transcript": "Team 7 reporting from Harbor School. Three people injured and conditions worsening. Send a medical team.",
+      "expected": {
+        "location": "Harbor School",
+        "incident_type": "medical",
+        "severity": "high",
+        "people_affected": 3,
+        "requested_resource": "medical team"
+      },
+      "sample_rate_hz": 16000,
+      "duration_seconds": 10.603,
+      "sha256": "b155f0966fb56598070200eb03a821a7820336abe11dff11a35a092ccbc8038f",
+      "processing": {
+        "name": "severe",
+        "noise_level": 0.032,
+        "dropout_count": 3,
+        "band_limited": true
+      }
+    }
+  ]
+}

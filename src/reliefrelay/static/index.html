@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#07110f">
+  <title>ReliefRelay — Response Operations</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="noise" aria-hidden="true"></div>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="ReliefRelay home">
+      <span class="brand-mark"><i></i><i></i><i></i></span>
+      <span>
+        <strong>RELIEFRELAY</strong>
+        <small>FIELD INTELLIGENCE</small>
+      </span>
+    </a>
+    <div class="mission-label">
+      <span>MISSION</span>
+      <strong>RIVER DISTRICT RESPONSE</strong>
+    </div>
+    <div class="system-status">
+      <span class="status-dot"></span>
+      <span>
+        <small>SYSTEM STATUS</small>
+        <strong id="system-status">CONNECTING</strong>
+      </span>
+    </div>
+  </header>
+
+  <main class="shell">
+    <section class="overview panel">
+      <div class="panel-heading">
+        <span class="eyebrow">01 / SITUATION</span>
+        <span id="clock" class="mono">--:--:-- CDT</span>
+      </div>
+      <h1>Response<br><em>Operations</em></h1>
+      <p class="lede">Local voice intelligence for teams working where bandwidth, time, and compute are limited.</p>
+
+      <div class="metric-stack">
+        <article>
+          <small>ACTIVE INCIDENTS</small>
+          <strong id="incident-total">00</strong>
+          <span class="trend">LIVE BOARD</span>
+        </article>
+        <article>
+          <small>CRITICAL</small>
+          <strong id="critical-total">00</strong>
+          <span class="trend critical">PRIORITY</span>
+        </article>
+      </div>
+
+      <div class="runtime-card">
+        <div>
+          <small>INFERENCE TARGET</small>
+          <strong id="architecture">DETECTING</strong>
+        </div>
+        <span class="arm-chip">ARM64<br>READY</span>
+        <dl>
+          <div><dt>Runtime</dt><dd>whisper.cpp adapter</dd></div>
+          <div><dt>Benchmark</dt><dd id="benchmark-status">Awaiting Arm runner</dd></div>
+          <div><dt>Privacy</dt><dd>No external AI API</dd></div>
+        </dl>
+      </div>
+    </section>
+
+    <section class="field panel">
+      <div class="panel-heading">
+        <span class="eyebrow">02 / FIELD MAP</span>
+        <span class="live-pill"><i></i> LIVE</span>
+      </div>
+      <div class="map" aria-label="Response zone overview">
+        <svg viewBox="0 0 720 430" role="img" aria-label="Stylized response district map">
+          <defs>
+            <pattern id="grid" width="36" height="36" patternUnits="userSpaceOnUse">
+              <path d="M 36 0 L 0 0 0 36" fill="none" stroke="rgba(160,190,177,.08)" stroke-width="1"/>
+            </pattern>
+          </defs>
+          <rect width="720" height="430" fill="url(#grid)"/>
+          <path class="water" d="M-30 345 C100 285 185 390 310 330 S510 250 750 306"/>
+          <path class="road" d="M52 72 L650 358 M88 385 L635 65 M12 207 L706 205"/>
+          <path class="minor-road" d="M230 12 L240 420 M475 0 L460 430"/>
+          <g class="zone-labels">
+            <text x="75" y="45">NORTH SECTOR</text>
+            <text x="540" y="48">EAST SECTOR</text>
+            <text x="62" y="412">RIVERSIDE</text>
+          </g>
+          <g id="map-markers"></g>
+        </svg>
+        <div class="map-key">
+          <span><i class="critical-key"></i> Critical</span>
+          <span><i class="high-key"></i> High</span>
+          <span><i class="standard-key"></i> Standard</span>
+        </div>
+        <div id="map-empty" class="map-empty">
+          <span class="radar"></span>
+          <strong>AWAITING FIELD REPORT</strong>
+          <small>Use the radio intake to run the first scenario</small>
+        </div>
+      </div>
+
+      <div class="incident-header">
+        <h2>Incident queue</h2>
+        <span>PRIORITY ORDER</span>
+      </div>
+      <div id="incident-list" class="incident-list" aria-live="polite"></div>
+    </section>
+
+    <aside class="intake panel">
+      <div class="panel-heading">
+        <span class="eyebrow">03 / RADIO INTAKE</span>
+        <span class="mono">SIMULATION</span>
+      </div>
+      <div class="signal">
+        <div class="waveform" aria-hidden="true">
+          <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+        </div>
+        <div>
+          <small>CHANNEL 04</small>
+          <strong>FIELD REPORT</strong>
+        </div>
+        <span class="signal-badge">READY</span>
+      </div>
+
+      <div class="audio-preview">
+        <div>
+          <small>SYNTHETIC RADIO FIXTURE</small>
+          <strong id="audio-label">RIVERSIDE FLOOD · RADIO</strong>
+        </div>
+        <audio id="scenario-audio" controls preload="metadata" src="/audio/riverside-flood-radio.wav"></audio>
+        <div class="audio-variants" role="group" aria-label="Signal condition">
+          <button data-variant="clear" type="button" aria-pressed="false">Clear</button>
+          <button data-variant="radio" type="button" aria-pressed="true">Radio</button>
+          <button data-variant="severe" type="button" aria-pressed="false">Severe</button>
+        </div>
+        <span>Exact transcript · Apache-2.0 voice model</span>
+      </div>
+
+      <label for="transcript">Local transcript</label>
+      <textarea id="transcript" rows="8" readonly placeholder="Transcript will appear after local Whisper inference."></textarea>
+      <p class="input-note">The selected WAV is sent to the local Whisper.cpp runtime, then routed through incident extraction.</p>
+
+      <button id="process-report" class="primary-action" type="button">
+        <span>TRANSCRIBE + ROUTE REPORT</span>
+        <b>→</b>
+      </button>
+
+      <dl id="processing-result" class="processing-result" hidden>
+        <div><dt>Inference</dt><dd id="inference-time">—</dd></div>
+        <div><dt>Audio length</dt><dd id="audio-duration">—</dd></div>
+        <div><dt>Real-time factor</dt><dd id="real-time-factor">—</dd></div>
+        <div><dt>Runtime</dt><dd id="runtime-result">—</dd></div>
+      </dl>
+
+      <div class="scenario-picker">
+        <div class="section-label">QUICK SCENARIOS</div>
+        <button class="selected" data-scenario="flood" type="button" aria-pressed="true"><span>01</span> Riverside flood</button>
+        <button data-scenario="fire" type="button" aria-pressed="false"><span>02</span> Clinic fire</button>
+        <button data-scenario="medical" type="button" aria-pressed="false"><span>03</span> Medical request</button>
+      </div>
+
+      <div class="pipeline-card">
+        <div class="section-label">PROCESSING PIPELINE</div>
+        <ol>
+          <li class="active complete"><i>1</i><span>Voice intake<small id="voice-state">Fixture selected</small></span></li>
+          <li><i>2</i><span>Local transcription<small id="transcription-state">Waiting for audio</small></span></li>
+          <li><i>3</i><span>Incident extraction<small id="extraction-state">Waiting for transcript</small></span></li>
+          <li><i>4</i><span>Priority routing<small id="routing-state">Waiting for incident</small></span></li>
+        </ol>
+      </div>
+    </aside>
+  </main>
+
+  <div id="toast" class="toast" role="status"></div>
+  <script src="/app.js" defer></script>
+</body>
+</html>
