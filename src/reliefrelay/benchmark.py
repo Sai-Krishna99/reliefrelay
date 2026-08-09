@@ -199,3 +199,20 @@ def baseline_runtime_description(summary: dict[str, Any]) -> str:
         f"{summary['fixture_count']} fixtures and "
         f"{summary['sample_count']} measured inferences"
     )
+
+
+def render_github_notice(comparison: dict[str, Any]) -> str:
+    metrics = comparison["metrics"]
+    optimized_summary = comparison["summaries"]["optimized"]
+    status = "PASS" if comparison["quality_guard"]["passed"] else "FAIL"
+    return (
+        f"Quality guard {status}; Q5_1 is "
+        f"{metrics['model_size_reduction_percent']:.2f}% smaller; "
+        f"median latency reduction "
+        f"{metrics['median_latency_reduction_percent']:.2f}%; "
+        f"p95 latency reduction "
+        f"{metrics['p95_latency_reduction_percent']:.2f}%; "
+        f"WER {optimized_summary['mean_word_error_rate']:.2%}; "
+        f"structured accuracy "
+        f"{optimized_summary['structured_field_accuracy']:.2%}"
+    )

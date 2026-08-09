@@ -2,6 +2,7 @@ from reliefrelay.benchmark import (
     build_comparison,
     percentile,
     render_comparison_markdown,
+    render_github_notice,
     word_error_rate,
 )
 
@@ -51,6 +52,11 @@ def test_comparison_reports_reductions_and_quality_guard() -> None:
     assert comparison["metrics"]["median_latency_reduction_percent"] == 25.0
     assert comparison["quality_guard"]["passed"] is True
     assert "Quality guard: **PASS**" in render_comparison_markdown(comparison)
+    assert render_github_notice(comparison) == (
+        "Quality guard PASS; Q5_1 is 60.00% smaller; "
+        "median latency reduction 25.00%; p95 latency reduction 33.33%; "
+        "WER 11.00%; structured accuracy 100.00%"
+    )
 
     invalid_provenance = build_comparison(
         baseline,

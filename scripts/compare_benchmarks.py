@@ -2,10 +2,15 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from pathlib import Path
 from typing import Any
 
-from reliefrelay.benchmark import build_comparison, render_comparison_markdown
+from reliefrelay.benchmark import (
+    build_comparison,
+    render_comparison_markdown,
+    render_github_notice,
+)
 
 
 def parse_args() -> argparse.Namespace:
@@ -41,6 +46,11 @@ if __name__ == "__main__":
     arguments.markdown_output.parent.mkdir(parents=True, exist_ok=True)
     arguments.markdown_output.write_text(markdown, encoding="utf-8")
     print(markdown, end="")
+
+    if os.getenv("GITHUB_ACTIONS") == "true":
+        title = "ReliefRelay native optimization result"
+        notice = render_github_notice(comparison).replace("%", "%25")
+        print(f"::notice title={title}::{notice}")
 
     if not comparison["quality_guard"]["passed"]:
         raise SystemExit("Optimized model failed the benchmark quality guard")
