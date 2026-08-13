@@ -11,6 +11,7 @@ from typing import Any
 
 from reliefrelay.benchmark import percentile, word_error_rate
 from reliefrelay.extraction import EmergencyReportExtractor, RESPONSE_LOCATIONS
+from reliefrelay.platform_info import default_inference_threads, processor_name
 from reliefrelay.transcription import WhisperCppTranscriber
 
 
@@ -31,7 +32,7 @@ def parse_args() -> argparse.Namespace:
         default=Path("models/whisper/ggml-tiny.en-q5_1.bin"),
     )
     parser.add_argument("--label", default="q5_1")
-    parser.add_argument("--threads", type=int, default=4)
+    parser.add_argument("--threads", type=int, default=default_inference_threads())
     parser.add_argument("--runs", type=int, default=1)
     parser.add_argument("--warmups", type=int, default=0)
     parser.add_argument("--output", type=Path)
@@ -134,7 +135,9 @@ def benchmark(
         "runtime": {
             "label": label,
             "architecture": platform.machine() or "unknown",
-            "processor": platform.processor() or "unknown",
+            "processor": processor_name(),
+            "operating_system": platform.system(),
+            "platform_release": platform.release(),
             "model": model_path.name,
             "model_bytes": model_bytes,
             "model_mib": round(model_bytes / (1024 * 1024), 2),

@@ -49,6 +49,10 @@ def build_comparison(
     quantization: dict[str, Any],
     *,
     max_wer_regression: float = 0.02,
+    max_optimized_wer: float = 0.20,
+    min_structured_accuracy: float = 0.95,
+    max_latency_regression: float = 0.05,
+    max_p95_latency_regression: float = 0.10,
 ) -> dict[str, Any]:
     baseline_summary = baseline["summary"]
     optimized_summary = optimized["summary"]
@@ -80,11 +84,35 @@ def build_comparison(
         quantization["baseline_sha256"] == baseline_runtime["model_sha256"]
         and quantization["optimized_sha256"] == optimized_runtime["model_sha256"]
     )
+    baseline_fixtures = [item["file"] for item in baseline.get("fixtures", [])]
+    optimized_fixtures = [item["file"] for item in optimized.get("fixtures", [])]
+    matching_fixtures = (
+        baseline_fixtures == optimized_fixtures
+        if baseline_fixtures or optimized_fixtures
+        else True
+    )
+    absolute_quality_passed = (
+        optimized_summary["mean_word_error_rate"] <= max_optimized_wer
+        and optimized_summary["structured_field_accuracy"]
+        >= min_structured_accuracy
+    )
+    performance_within_limit = (
+        optimized_summary["median_inference_seconds"]
+        <= baseline_summary["median_inference_seconds"]
+        * (1 + max_latency_regression)
+        and optimized_runtime["model_bytes"] < baseline_runtime["model_bytes"]
+        and optimized_summary["p95_inference_seconds"]
+        <= baseline_summary["p95_inference_seconds"]
+        * (1 + max_p95_latency_regression)
+    )
     quality_preserved = (
         wer_delta <= max_wer_regression
         and accuracy_delta >= 0
         and matching_environment
         and quantization_matches
+        and matching_fixtures
+        and absolute_quality_passed
+        and performance_within_limit
     )
 
     return {
@@ -114,9 +142,16 @@ def build_comparison(
             "passed": quality_preserved,
             "matching_environment": matching_environment,
             "quantization_provenance_verified": quantization_matches,
+            "matching_fixtures": matching_fixtures,
             "max_word_error_rate_regression": max_wer_regression,
+            "max_optimized_word_error_rate": max_optimized_wer,
+            "min_structured_field_accuracy": min_structured_accuracy,
+            "max_latency_regression": max_latency_regression,
+            "max_p95_latency_regression": max_p95_latency_regression,
             "word_error_rate_within_limit": wer_delta <= max_wer_regression,
             "structured_accuracy_preserved": accuracy_delta >= 0,
+            "absolute_quality_passed": absolute_quality_passed,
+            "performance_within_limit": performance_within_limit,
         },
         "summaries": {
             "baseline": baseline_summary,
@@ -136,6 +171,11 @@ def render_comparison_markdown(comparison: dict[str, Any]) -> str:
     guard = comparison["quality_guard"]
     status = "PASS" if guard["passed"] else "FAIL"
 
+    def latency_change(value: float) -> str:
+        if value >= 0:
+            return f"{value:.2f}% reduction"
+        return f"{abs(value):.2f}% increase"
+
     return "\n".join(
         [
             f"## ReliefRelay {baseline['architecture']} optimization benchmark",
@@ -153,35 +193,37 @@ def render_comparison_markdown(comparison: dict[str, Any]) -> str:
                 f"| Median inference | "
                 f"{baseline_summary['median_inference_seconds']:.3f} s | "
                 f"{optimized_summary['median_inference_seconds']:.3f} s | "
-                f"{metrics['median_latency_reduction_percent']:.2f}% reduction |"
+                f"{latency_change(metrics['median_latency_reduction_percent'])} |"
             ),
             (
                 f"| P95 inference | "
                 f"{baseline_summary['p95_inference_seconds']:.3f} s | "
                 f"{optimized_summary['p95_inference_seconds']:.3f} s | "
-                f"{metrics['p95_latency_reduction_percent']:.2f}% reduction |"
+                f"{latency_change(metrics['p95_latency_reduction_percent'])} |"
             ),
             (
                 f"| Median real-time factor | "
                 f"{baseline_summary['median_real_time_factor']:.4f} | "
                 f"{optimized_summary['median_real_time_factor']:.4f} | "
-                f"{metrics['median_real_time_factor_reduction_percent']:.2f}% reduction |"
+                f"{latency_change(metrics['median_real_time_factor_reduction_percent'])} |"
             ),
             (
                 f"| Mean word error rate | "
                 f"{baseline_summary['mean_word_error_rate']:.2%} | "
                 f"{optimized_summary['mean_word_error_rate']:.2%} | "
-                f"{metrics['word_error_rate_delta']:+.2%} |"
+                f"{metrics['word_error_rate_delta'] * 100:+.2f} pp |"
             ),
             (
                 f"| Structured-field accuracy | "
                 f"{baseline_summary['structured_field_accuracy']:.2%} | "
                 f"{optimized_summary['structured_field_accuracy']:.2%} | "
-                f"{metrics['structured_field_accuracy_delta']:+.2%} |"
+                f"{metrics['structured_field_accuracy_delta'] * 100:+.2f} pp |"
             ),
             "",
             (
-                f"Measured on `{baseline['architecture']}` with "
+                f"Measured on {baseline.get('processor', 'unknown processor')} "
+                f"(`{baseline['architecture']}`, "
+                f"{baseline.get('operating_system', 'unknown OS')}) with "
                 f"{baseline['threads']} threads, "
                 f"{baseline_runtime_description(baseline_summary)}."
             ),

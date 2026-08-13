@@ -1,20 +1,32 @@
 import argparse
 import json
+import os
 import platform
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
+from reliefrelay.platform_info import (
+    default_inference_threads,
+    processor_name,
+    total_memory_bytes,
+)
+
 
 ARM64_NAMES = {"aarch64", "arm64"}
 
 
-def collect_runtime() -> dict[str, str | bool]:
+def collect_runtime() -> dict[str, str | bool | int | None]:
     architecture = platform.machine().lower()
     return {
         "architecture": architecture,
         "arm64": architecture in ARM64_NAMES,
         "operating_system": platform.system(),
+        "operating_system_release": platform.release(),
+        "processor": processor_name(),
+        "logical_cpus": os.cpu_count(),
+        "recommended_inference_threads": default_inference_threads(),
+        "total_memory_bytes": total_memory_bytes(),
         "python": platform.python_version(),
         "captured_at": datetime.now(UTC).isoformat(),
     }

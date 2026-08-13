@@ -1,0 +1,17 @@
+services:
+  reliefrelay:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment:
+      RELIEFRELAY_API_TOKEN: "${RELIEFRELAY_API_TOKEN:-}"
+      RELIEFRELAY_WHISPER_THREADS: "${RELIEFRELAY_WHISPER_THREADS:-6}"
+      RELIEFRELAY_MAX_CONCURRENT_INFERENCE: "${RELIEFRELAY_MAX_CONCURRENT_INFERENCE:-1}"
+    volumes:
+      - reliefrelay-data:/data
+      - ./.local/whisper:/app/.local/whisper:ro
+      - ./models:/app/models:ro
+
+volumes:
+  reliefrelay-data:

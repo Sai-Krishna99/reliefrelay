@@ -60,7 +60,8 @@
         <span class="arm-chip">ARM64<br>READY</span>
         <dl>
           <div><dt>Runtime</dt><dd>whisper.cpp adapter</dd></div>
-          <div><dt>Benchmark</dt><dd id="benchmark-status">Awaiting Arm runner</dd></div>
+          <div><dt>Optimized model</dt><dd>Q5_1 · 58.6% smaller</dd></div>
+          <div><dt>Arm64 evidence</dt><dd id="benchmark-status">100% structured fields</dd></div>
           <div><dt>Privacy</dt><dd>No external AI API</dd></div>
         </dl>
       </div>
@@ -103,7 +104,7 @@
 
       <div class="incident-header">
         <h2>Incident queue</h2>
-        <span>PRIORITY ORDER</span>
+        <label class="closed-toggle"><input id="include-closed" type="checkbox"> SHOW CLOSED</label>
       </div>
       <div id="incident-list" class="incident-list" aria-live="polite"></div>
     </section>
@@ -111,7 +112,7 @@
     <aside class="intake panel">
       <div class="panel-heading">
         <span class="eyebrow">03 / RADIO INTAKE</span>
-        <span class="mono">SIMULATION</span>
+        <span class="mono">LOCAL + LIVE</span>
       </div>
       <div class="signal">
         <div class="waveform" aria-hidden="true">
@@ -124,9 +125,19 @@
         <span class="signal-badge">READY</span>
       </div>
 
+      <div class="live-intake">
+        <div class="section-label">LIVE FIELD INPUT</div>
+        <label class="file-action" for="audio-upload">
+          <span>Choose WAV recording</span>
+          <input id="audio-upload" type="file" accept=".wav,audio/wav,audio/x-wav">
+        </label>
+        <button id="record-audio" class="secondary-action" type="button">● START MICROPHONE RECORDING</button>
+        <small id="input-source">Using synthetic radio fixture</small>
+      </div>
+
       <div class="audio-preview">
         <div>
-          <small>SYNTHETIC RADIO FIXTURE</small>
+          <small>LOCAL AUDIO PREVIEW</small>
           <strong id="audio-label">RIVERSIDE FLOOD · RADIO</strong>
         </div>
         <audio id="scenario-audio" controls preload="metadata" src="/audio/riverside-flood-radio.wav"></audio>
@@ -135,15 +146,15 @@
           <button data-variant="radio" type="button" aria-pressed="true">Radio</button>
           <button data-variant="severe" type="button" aria-pressed="false">Severe</button>
         </div>
-        <span>Exact transcript · Apache-2.0 voice model</span>
+        <span>Audio remains on this ReliefRelay server</span>
       </div>
 
       <label for="transcript">Local transcript</label>
-      <textarea id="transcript" rows="8" readonly placeholder="Transcript will appear after local Whisper inference."></textarea>
-      <p class="input-note">The selected WAV is sent to the local Whisper.cpp runtime, then routed through incident extraction.</p>
+      <textarea id="transcript" rows="8" placeholder="Transcript will appear after local Whisper inference and can be corrected before confirmation."></textarea>
+      <p class="input-note">The selected WAV stays on this server. AI output must be confirmed by an operator before dispatch.</p>
 
       <button id="process-report" class="primary-action" type="button">
-        <span>TRANSCRIBE + ROUTE REPORT</span>
+        <span>TRANSCRIBE + REVIEW REPORT</span>
         <b>→</b>
       </button>
 
@@ -153,6 +164,28 @@
         <div><dt>Real-time factor</dt><dd id="real-time-factor">—</dd></div>
         <div><dt>Runtime</dt><dd id="runtime-result">—</dd></div>
       </dl>
+
+      <form id="review-form" class="review-form" hidden>
+        <div class="section-label">OPERATOR REVIEW REQUIRED</div>
+        <div id="review-warnings" class="review-warnings"></div>
+        <label>Location<input id="review-location" required maxlength="120"></label>
+        <div class="review-grid">
+          <label>Incident type<input id="review-type" required maxlength="80"></label>
+          <label>Severity
+            <select id="review-severity">
+              <option value="critical">Critical</option>
+              <option value="high">High</option>
+              <option value="standard">Standard</option>
+            </select>
+          </label>
+        </div>
+        <div class="review-grid">
+          <label>People affected<input id="review-people" type="number" min="0"></label>
+          <label>Requested resource<input id="review-resource" maxlength="120"></label>
+        </div>
+        <label>Assign to<input id="review-assignee" maxlength="120" placeholder="Optional team or operator"></label>
+        <button class="confirm-action" type="submit">CONFIRM + ACKNOWLEDGE</button>
+      </form>
 
       <div class="scenario-picker">
         <div class="section-label">QUICK SCENARIOS</div>
@@ -174,6 +207,10 @@
   </main>
 
   <div id="toast" class="toast" role="status"></div>
+  <dialog id="incident-dialog" class="incident-dialog">
+    <button id="close-dialog" class="dialog-close" type="button" aria-label="Close">×</button>
+    <div id="incident-detail"></div>
+  </dialog>
   <script src="/app.js" defer></script>
 </body>
 </html>

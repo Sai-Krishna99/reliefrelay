@@ -4,5 +4,11 @@
 .pytest_cache/
 __pycache__/
 *.py[cod]
+.env
+.DS_Store
+dist/
+*.db
+*.db-shm
+*.db-wal
 artifacts/
 models/

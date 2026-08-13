@@ -69,6 +69,31 @@ def test_comparison_reports_reductions_and_quality_guard() -> None:
     )
     assert invalid_provenance["quality_guard"]["passed"] is False
 
+    poor_baseline = _report(
+        model_bytes=100,
+        model_mib=100.0,
+        median_seconds=2.0,
+        p95_seconds=3.0,
+        real_time_factor=0.2,
+        word_error_rate=0.4,
+    )
+    poor_optimized = _report(
+        model_bytes=40,
+        model_mib=40.0,
+        median_seconds=1.5,
+        p95_seconds=2.0,
+        real_time_factor=0.15,
+        word_error_rate=0.4,
+    )
+    assert build_comparison(
+        poor_baseline,
+        poor_optimized,
+        {
+            "baseline_sha256": "baseline-sha",
+            "optimized_sha256": "optimized-sha",
+        },
+    )["quality_guard"]["passed"] is False
+
 
 def _report(
     *,

@@ -5,6 +5,7 @@ import hashlib
 import json
 import os
 import platform
+import shutil
 import subprocess
 import tarfile
 import tempfile
@@ -39,9 +40,13 @@ GENERATED_MODEL_NAME = "ggml-tiny.en-q5_1-reliefrelay.bin"
 class RuntimeAsset:
     archive_name: str
     sha256: str
+    download_url: str | None = None
+    build_from_source: bool = False
 
     @property
     def url(self) -> str:
+        if self.download_url:
+            return self.download_url
         return (
             "https://github.com/ggml-org/whisper.cpp/releases/download/"
             f"v{WHISPER_VERSION}/{self.archive_name}"
@@ -60,6 +65,24 @@ RUNTIME_ASSETS = {
     ("Linux", "aarch64"): RuntimeAsset(
         "whisper-bin-ubuntu-arm64.tar.gz",
         "7e26fa6a36d9174d5c0bf033ccbc026c3b5e569e2ee787058241346ef5392719",
+    ),
+    ("Darwin", "arm64"): RuntimeAsset(
+        f"whisper.cpp-v{WHISPER_VERSION}.tar.gz",
+        "a6abd064fcca8b85e794d205abf328c522e9451db43a3eadc178b883b7d0e9cd",
+        download_url=(
+            "https://github.com/ggml-org/whisper.cpp/archive/refs/tags/"
+            f"v{WHISPER_VERSION}.tar.gz"
+        ),
+        build_from_source=True,
+    ),
+    ("Darwin", "x86_64"): RuntimeAsset(
+        f"whisper.cpp-v{WHISPER_VERSION}.tar.gz",
+        "a6abd064fcca8b85e794d205abf328c522e9451db43a3eadc178b883b7d0e9cd",
+        download_url=(
+            "https://github.com/ggml-org/whisper.cpp/archive/refs/tags/"
+            f"v{WHISPER_VERSION}.tar.gz"
+        ),
+        build_from_source=True,
     ),
 }
 
@@ -126,6 +149,42 @@ def ensure_model(path: Path, url: str, expected_sha256: str) -> None:
         download(url, path, expected_sha256)
 
 
+def build_runtime_from_source(runtime_directory: Path) -> None:
+    if shutil.which("cmake") is None:
+        raise SystemExit(
+            "CMake is required to build whisper.cpp on macOS. "
+            "Install it with: brew install cmake"
+        )
+    source_directories = [
+        path
+        for path in runtime_directory.iterdir()
+        if path.is_dir() and (path / "CMakeLists.txt").exists()
+    ]
+    if len(source_directories) != 1:
+        raise RuntimeError(
+            f"Expected one whisper.cpp source directory, found {len(source_directories)}"
+        )
+    source_directory = source_directories[0]
+    build_directory = source_directory / "build-reliefrelay"
+    subprocess.run(
+        [
+            "cmake",
+            "-S",
+            str(source_directory),
+            "-B",
+            str(build_directory),
+            "-DCMAKE_BUILD_TYPE=Release",
+            "-DWHISPER_BUILD_TESTS=OFF",
+            "-DWHISPER_BUILD_EXAMPLES=ON",
+        ],
+        check=True,
+    )
+    subprocess.run(
+        ["cmake", "--build", str(build_directory), "--parallel"],
+        check=True,
+    )
+
+
 def quantize_model(
     quantizer_path: Path,
     baseline_path: Path,
@@ -172,6 +231,8 @@ def setup(
         archive_path = Path(directory) / asset.archive_name
         download(asset.url, archive_path, asset.sha256)
         extract_archive(archive_path, runtime_directory)
+    if asset.build_from_source:
+        build_runtime_from_source(runtime_directory)
 
     model_directory.mkdir(parents=True, exist_ok=True)
     cli_path = find_executable(runtime_directory, "whisper-cli")

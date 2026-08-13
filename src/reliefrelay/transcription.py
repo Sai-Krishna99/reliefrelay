@@ -31,12 +31,14 @@ class WhisperCppTranscriber:
         binary_path: Path,
         model_path: Path,
         threads: int = 4,
+        timeout_seconds: float = 120,
         run_command: Callable[..., subprocess.CompletedProcess[str]] = subprocess.run,
         timer: Callable[[], float] = time.perf_counter,
     ) -> None:
         self._binary_path = binary_path
         self._model_path = model_path
         self._threads = threads
+        self._timeout_seconds = timeout_seconds
         self._run_command = run_command
         self._timer = timer
 
@@ -68,6 +70,7 @@ class WhisperCppTranscriber:
                 check=True,
                 capture_output=True,
                 text=True,
+                timeout=self._timeout_seconds,
             )
             inference_seconds = round(self._timer() - started_at, 3)
             output = json.loads(

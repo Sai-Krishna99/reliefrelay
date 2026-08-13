@@ -1,14 +1,22 @@
 # ReliefRelay
 
-Local, Arm-ready voice intelligence for emergency field reports.
+Local, Arm-ready voice intelligence and human-reviewed incident operations for
+emergency field reports.
 
 ReliefRelay turns noisy radio-style WAV recordings into structured, prioritized
 incident records without sending operational audio to an external AI API. It
 combines a local `whisper.cpp` runtime, deterministic incident extraction,
-context-aware location recovery, deduplication, and a response-operations
-dashboard.
+context-aware location recovery, bounded deduplication, persistent report
+history, operator review, and a response-operations dashboard.
 
-Built for the **Arm Create: AI Optimization Challenge**.
+Built for the **Arm Create: AI Optimization Challenge — Physical AI track**.
+ReliefRelay consumes audio sensor input on nearby Arm edge compute and produces
+human-reviewed priority and dispatch decisions without a cloud AI dependency.
+
+> **Judges:** start with the [submission overview](docs/SUBMISSION.md) or inspect
+> the [native Arm64 evidence](docs/benchmarks/arm64-comparison.md).
+
+![ReliefRelay response operations dashboard](docs/images/reliefrelay-dashboard.png)
 
 ## Why it matters
 
@@ -24,37 +32,48 @@ Arm64 infrastructure while preserving the information responders need:
 
 ```mermaid
 flowchart LR
-    A[Field-report WAV] --> B[Local whisper.cpp]
-    B --> C[Context-aware extraction]
-    C --> D[Deduplication and routing]
-    D --> E[Response dashboard]
+    A[Radio or microphone audio] --> B[Q5_1 whisper.cpp on Arm]
+    B --> C[Safety-aware extraction]
+    C --> D[Operator review]
+    D --> E[Priority and dispatch workflow]
 ```
 
-## Current evidence
+## What was optimized for Arm
+
+ReliefRelay's optimization is a reproducible stack rather than an architecture
+label:
+
+1. Pin and checksum-verify `whisper.cpp` v1.9.2 and Whisper Tiny English.
+2. Generate a Q5_1 model from the verified full-precision model on Arm64.
+3. Use the native Arm CPU backend and platform acceleration while bounding
+   inference parallelism for stable tail latency.
+4. Keep extraction, review, persistence, and routing local so audio never needs
+   an external inference service.
+5. Fail CI when provenance, environment parity, absolute quality, field
+   accuracy, model-size reduction, or latency limits are violated.
+
+The result is a **58.6% smaller model** with unchanged median latency, slightly
+lower p95 latency, lower WER, and higher structured-field accuracy on the
+included degraded-radio corpus.
+
+## Native Arm64 evidence
 
 The included benchmark contains three synthetic emergency scenarios, three
 voices, and three signal conditions: clear, radio, and severe.
 
-| AMD64 local reference | Full precision | Q5_1 | Change |
+| Apple M4 Arm64, 6 threads | Full precision | Q5_1 | Change |
 | --- | ---: | ---: | ---: |
 | Model size | 74.10 MiB | 30.68 MiB | 58.60% smaller |
-| Median inference | 0.625 s | 0.550 s | 12.00% lower |
-| P95 inference | 0.695 s | 0.636 s | 8.49% lower |
-| Median real-time factor | 0.0753 | 0.0660 | 12.35% lower |
-| Mean word error rate | 11.23% | 10.54% | 0.69 pp lower |
-| Structured-field accuracy | 100% | 100% | preserved |
+| Median inference | 0.273 s | 0.273 s | unchanged |
+| P95 inference | 0.307 s | 0.302 s | 1.63% lower |
+| Mean word error rate | 11.23% | 8.79% | 2.44 pp lower |
+| Structured-field accuracy | 97.78% | 100.00% | 2.22 pp higher |
 
-These numbers are a development-machine reference, not Arm64 results. The
-`Arm64 validation` GitHub Action performs the submission-grade comparison on a
-native `ubuntu-24.04-arm` runner. It downloads the verified full-precision Tiny
-English model, generates ReliefRelay's Q5_1 model with `whisper-quantize` on
-Arm64, and benchmarks both models under identical conditions.
-
-The comparison uses one warmup plus five measured runs for each of the nine
-fixtures. It reports median and p95 inference latency, real-time factor, model
-size, word error rate, and structured-field accuracy. The job fails if model
-provenance cannot be verified or quantization degrades the permitted quality
-threshold.
+This comparison uses two warmups and seven runs for every fixture: **126 native
+Arm64 inferences** total across the two models. Full reports, individual
+timings, model hashes, runtime metadata, and quantization provenance are
+committed under [`docs/benchmarks/`](docs/benchmarks/README.md). The same quality
+guard also runs on a native `ubuntu-24.04-arm` GitHub Actions runner.
 
 ## Quick start
 
@@ -76,8 +95,10 @@ Tiny English model:
 uv run python scripts/setup_whisper_runtime.py
 ```
 
-The setup script supports Windows x64, Ubuntu x64, and Ubuntu Arm64. Downloaded
-runtime files and models remain git-ignored.
+The setup script supports Windows x64, Ubuntu x64, Ubuntu Arm64, and macOS
+Arm64/x64. macOS builds the pinned, checksum-verified source with CMake so the
+native Metal-capable runtime matches the pinned version. Downloaded runtime
+files and models remain git-ignored.
 
 Start the application:
 
@@ -86,7 +107,12 @@ uv run uvicorn reliefrelay.api:app --app-dir src --host 0.0.0.0 --port 8000
 ```
 
 Open `http://127.0.0.1:8000`, select a scenario and signal condition, then click
-**Transcribe + Route Report**.
+**Transcribe + Review Report**. You can also upload a WAV file or capture a
+microphone recording directly in the browser. Confirm or correct every field
+before acknowledging or assigning the incident.
+
+Operational data is stored in `.local/reliefrelay.db` by default and survives
+application restarts.
 
 ## Validate
 
@@ -140,7 +166,17 @@ overridden for a VM, container, or custom build:
 | --- | --- |
 | `RELIEFRELAY_WHISPER_BINARY` | Path to `whisper-cli` |
 | `RELIEFRELAY_WHISPER_MODEL` | Path to a compatible GGML model |
-| `RELIEFRELAY_WHISPER_THREADS` | CPU inference thread count; default `4` |
+| `RELIEFRELAY_WHISPER_THREADS` | CPU inference threads; defaults to available CPUs capped at `6` |
+| `RELIEFRELAY_WHISPER_TIMEOUT_SECONDS` | Maximum seconds for one transcription; default `120` |
+| `RELIEFRELAY_DATABASE` | Persistent SQLite database path |
+| `RELIEFRELAY_API_TOKEN` | Optional bearer token; set for shared deployments |
+| `RELIEFRELAY_MAX_CONCURRENT_INFERENCE` | Maximum simultaneous Whisper jobs; default `1` |
+| `RELIEFRELAY_QUEUE_TIMEOUT_SECONDS` | Maximum inference queue wait; default `5` |
+| `RELIEFRELAY_DEDUPLICATION_WINDOW_HOURS` | Window for merging similar open reports; default `24` |
+
+See [`.env.example`](.env.example) for the complete configuration and
+[`docs/OPERATIONS.md`](docs/OPERATIONS.md) for deployment, backup, access, and
+incident-workflow guidance.
 
 ## Audio fixtures
 
@@ -165,9 +201,10 @@ tests/                      Unit, API, fixture and pipeline validation
 
 ## Scope
 
-ReliefRelay is a hackathon prototype and decision-support tool. It does not
-replace emergency dispatch procedures or human review. The known-location
-resolver is deliberately scoped to the configured response district.
+ReliefRelay is a decision-support tool. It does not replace emergency dispatch
+procedures. Machine-extracted incidents enter `needs_review`; original reports
+and operator changes are retained in an audit history. The known-location
+resolver remains deliberately scoped to the configured response district.
 
 ## License
 

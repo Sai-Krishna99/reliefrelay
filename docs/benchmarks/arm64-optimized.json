@@ -1,0 +1,273 @@
+{
+  "runtime": {
+    "label": "q5_1-reliefrelay",
+    "architecture": "arm64",
+    "processor": "Apple M4",
+    "operating_system": "Darwin",
+    "platform_release": "25.5.0",
+    "model": "ggml-tiny.en-q5_1-reliefrelay.bin",
+    "model_bytes": 32166155,
+    "model_mib": 30.68,
+    "model_sha256": "20997113f1fa483058c65fa5959a1027887a823db39ac5de6c78c272e2dd5aac",
+    "binary": "whisper-cli",
+    "engine": "whisper.cpp",
+    "threads": 6,
+    "runs": 7,
+    "warmups": 2,
+    "commit": "local"
+  },
+  "summary": {
+    "fixture_count": 9,
+    "sample_count": 63,
+    "median_inference_seconds": 0.273,
+    "p95_inference_seconds": 0.302,
+    "median_real_time_factor": 0.032,
+    "mean_word_error_rate": 0.0879,
+    "structured_field_accuracy": 1.0
+  },
+  "fixtures": [
+    {
+      "file": "riverside-flood-clear.wav",
+      "variant": "clear",
+      "transcript": "Unit 12, reporting from Riverside Shelter. We have rising flood water and 12 people need evacuation. Send a rescue team immediately.",
+      "distinct_transcript_count": 1,
+      "word_error_rate": 0.0476,
+      "inference_seconds": [
+        0.31,
+        0.294,
+        0.273,
+        0.291,
+        0.283,
+        0.284,
+        0.302
+      ],
+      "median_inference_seconds": 0.291,
+      "p95_inference_seconds": 0.31,
+      "audio_seconds": 8.661,
+      "median_real_time_factor": 0.0336,
+      "field_results": {
+        "location": true,
+        "incident_type": true,
+        "severity": true,
+        "people_affected": true,
+        "requested_resource": true
+      }
+    },
+    {
+      "file": "riverside-flood-radio.wav",
+      "variant": "radio",
+      "transcript": "Unit 12, reporting from Riverside Shelter. We have rising flood water and 12 people need evacuation. Send a rescue team immediately.",
+      "distinct_transcript_count": 1,
+      "word_error_rate": 0.0476,
+      "inference_seconds": [
+        0.287,
+        0.282,
+        0.28,
+        0.27,
+        0.267,
+        0.266,
+        0.27
+      ],
+      "median_inference_seconds": 0.27,
+      "p95_inference_seconds": 0.287,
+      "audio_seconds": 8.661,
+      "median_real_time_factor": 0.0312,
+      "field_results": {
+        "location": true,
+        "incident_type": true,
+        "severity": true,
+        "people_affected": true,
+        "requested_resource": true
+      }
+    },
+    {
+      "file": "riverside-flood-severe.wav",
+      "variant": "severe",
+      "transcript": "Unit 12 reporting from Riverside shelter. We have rising flood water and 12 people need evacuation. Send a rescue team immediately.",
+      "distinct_transcript_count": 1,
+      "word_error_rate": 0.0476,
+      "inference_seconds": [
+        0.264,
+        0.324,
+        0.293,
+        0.273,
+        0.27,
+        0.269,
+        0.277
+      ],
+      "median_inference_seconds": 0.273,
+      "p95_inference_seconds": 0.324,
+      "audio_seconds": 8.661,
+      "median_real_time_factor": 0.0315,
+      "field_results": {
+        "location": true,
+        "incident_type": true,
+        "severity": true,
+        "people_affected": true,
+        "requested_resource": true
+      }
+    },
+    {
+      "file": "north-clinic-fire-clear.wav",
+      "variant": "clear",
+      "transcript": "Medic 4 reporting from North Clinic, fire in the East Wing. Two patients trapped, send a rescue team immediately.",
+      "distinct_transcript_count": 1,
+      "word_error_rate": 0.0,
+      "inference_seconds": [
+        0.271,
+        0.281,
+        0.277,
+        0.293,
+        0.28,
+        0.274,
+        0.31
+      ],
+      "median_inference_seconds": 0.28,
+      "p95_inference_seconds": 0.31,
+      "audio_seconds": 8.149,
+      "median_real_time_factor": 0.0344,
+      "field_results": {
+        "location": true,
+        "incident_type": true,
+        "severity": true,
+        "people_affected": true,
+        "requested_resource": true
+      }
+    },
+    {
+      "file": "north-clinic-fire-radio.wav",
+      "variant": "radio",
+      "transcript": "Medic IV reporting from North Clinic, fire in the East Wing, two patients trapped, send a rescue team immediately.",
+      "distinct_transcript_count": 1,
+      "word_error_rate": 0.0526,
+      "inference_seconds": [
+        0.274,
+        0.264,
+        0.273,
+        0.269,
+        0.262,
+        0.264,
+        0.271
+      ],
+      "median_inference_seconds": 0.269,
+      "p95_inference_seconds": 0.274,
+      "audio_seconds": 8.149,
+      "median_real_time_factor": 0.033,
+      "field_results": {
+        "location": true,
+        "incident_type": true,
+        "severity": true,
+        "people_affected": true,
+        "requested_resource": true
+      }
+    },
+    {
+      "file": "north-clinic-fire-severe.wav",
+      "variant": "severe",
+      "transcript": "Metaphore reporting from North Carolina. Fire in the East Wing. Two patients trapped, send a rescue team immediately.",
+      "distinct_transcript_count": 1,
+      "word_error_rate": 0.1579,
+      "inference_seconds": [
+        0.269,
+        0.268,
+        0.257,
+        0.281,
+        0.293,
+        0.274,
+        0.267
+      ],
+      "median_inference_seconds": 0.269,
+      "p95_inference_seconds": 0.293,
+      "audio_seconds": 8.149,
+      "median_real_time_factor": 0.033,
+      "field_results": {
+        "location": true,
+        "incident_type": true,
+        "severity": true,
+        "people_affected": true,
+        "requested_resource": true
+      }
+    },
+    {
+      "file": "harbor-school-medical-clear.wav",
+      "variant": "clear",
+      "transcript": "Team seven, reporting from Harbor School. Three people injured and conditions worsening. Send a medical team.",
+      "distinct_transcript_count": 1,
+      "word_error_rate": 0.0625,
+      "inference_seconds": [
+        0.274,
+        0.3,
+        0.275,
+        0.28,
+        0.259,
+        0.256,
+        0.273
+      ],
+      "median_inference_seconds": 0.274,
+      "p95_inference_seconds": 0.3,
+      "audio_seconds": 10.603,
+      "median_real_time_factor": 0.0258,
+      "field_results": {
+        "location": true,
+        "incident_type": true,
+        "severity": true,
+        "people_affected": true,
+        "requested_resource": true
+      }
+    },
+    {
+      "file": "harbor-school-medical-radio.wav",
+      "variant": "radio",
+      "transcript": "Team 7, reporting from Harbor School. Three people injured and conditions worsening. Send a medical team.",
+      "distinct_transcript_count": 1,
+      "word_error_rate": 0.0,
+      "inference_seconds": [
+        0.26,
+        0.269,
+        0.241,
+        0.241,
+        0.237,
+        0.236,
+        0.242
+      ],
+      "median_inference_seconds": 0.241,
+      "p95_inference_seconds": 0.269,
+      "audio_seconds": 10.603,
+      "median_real_time_factor": 0.0227,
+      "field_results": {
+        "location": true,
+        "incident_type": true,
+        "severity": true,
+        "people_affected": true,
+        "requested_resource": true
+      }
+    },
+    {
+      "file": "harbor-school-medical-severe.wav",
+      "variant": "severe",
+      "transcript": "15, 7, reporting from Hogger School. Three people injured and conditions worse than me. And a medical team.",
+      "distinct_transcript_count": 1,
+      "word_error_rate": 0.375,
+      "inference_seconds": [
+        0.26,
+        0.285,
+        0.279,
+        0.275,
+        0.272,
+        0.274,
+        0.276
+      ],
+      "median_inference_seconds": 0.275,
+      "p95_inference_seconds": 0.285,
+      "audio_seconds": 10.603,
+      "median_real_time_factor": 0.0259,
+      "field_results": {
+        "location": true,
+        "incident_type": true,
+        "severity": true,
+        "people_affected": true,
+        "requested_resource": true
+      }
+    }
+  ]
+}
