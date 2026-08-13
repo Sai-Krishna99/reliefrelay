@@ -1,149 +1,310 @@
-# ReliefRelay
+# ReliefRelay — From Broken Radio to Reviewed Response
 
-Local, Arm-ready voice intelligence and human-reviewed incident operations for
-emergency field reports.
+[![Python 3.12+](https://img.shields.io/badge/Python-3.12+-3776AB.svg?logo=python&logoColor=white)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-local%20API-009688.svg?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![Arm64](https://img.shields.io/badge/Arm64-native-0091BD.svg?logo=arm&logoColor=white)](https://www.arm.com/)
+[![whisper.cpp](https://img.shields.io/badge/whisper.cpp-v1.9.2-111111.svg)](https://github.com/ggml-org/whisper.cpp)
+[![Arm64 CI](https://github.com/Sai-Krishna99/reliefrelay/actions/workflows/arm64-validate.yml/badge.svg)](https://github.com/Sai-Krishna99/reliefrelay/actions/workflows/arm64-validate.yml)
+[![Tests](https://img.shields.io/badge/tests-35%20passing-brightgreen.svg)](#reproducible-testing)
+[![License: Apache--2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
+
+> **When connectivity and audio both fail, response intelligence should keep working.**
 
 ReliefRelay turns noisy radio-style WAV recordings into structured, prioritized
-incident records without sending operational audio to an external AI API. It
-combines a local `whisper.cpp` runtime, deterministic incident extraction,
-context-aware location recovery, bounded deduplication, persistent report
-history, operator review, and a response-operations dashboard.
+incident records entirely on nearby Arm hardware. Local `whisper.cpp`
+transcription feeds a safety-aware extractor, an operator reviews every AI
+draft, and SQLite preserves the source report and every response decision.
 
-Built for the **Arm Create: AI Optimization Challenge — Physical AI track**.
-ReliefRelay consumes audio sensor input on nearby Arm edge compute and produces
-human-reviewed priority and dispatch decisions without a cloud AI dependency.
+The product is designed around one boundary: **AI may propose an incident, but
+only a human operator may acknowledge, assign, dispatch, resolve, or reject
+it.**
 
-> **Judges:** start with the [submission overview](docs/SUBMISSION.md) or inspect
-> the [native Arm64 evidence](docs/benchmarks/arm64-comparison.md).
+**Arm Create: AI Optimization Challenge track:** Physical AI<br>
+**Inference:** local and cloud-independent<br>
+**Demo data:** entirely synthetic
 
 ![ReliefRelay response operations dashboard](docs/images/reliefrelay-dashboard.png)
 
-## Why it matters
+## Quick Highlights
 
-Emergency teams often work with unreliable connectivity, constrained compute,
-and degraded voice reports. ReliefRelay is designed to run locally on CPU-only
-Arm64 infrastructure while preserving the information responders need:
+- **Radio-to-response workflow** — microphone, upload, and bundled degraded-radio inputs become reviewed incidents
+- **Local Arm inference** — operational audio is processed through `whisper.cpp` without an external AI API
+- **58.6% smaller model** — Q5_1 reduces Whisper Tiny English from 74.10 MiB to 30.68 MiB
+- **Measured, not implied** — raw transcripts, timings, hashes, environment data, WER, and task accuracy are committed
+- **Human-owned decisions** — extracted fields remain editable and enter `needs_review` before operational action
+- **Persistent incident history** — reports, corrections, assignments, status changes, and audit events survive restarts
+- **Safety-aware extraction** — negation, number words, resource intent, numeric addresses, and unknown locations are handled explicitly
+- **Bounded edge runtime** — concurrency limits, queue timeouts, transcription timeouts, and Arm-aware thread tuning protect the device
+- **Reproducible Arm64 CI** — native Arm runners rebuild the quantized model, execute tests, benchmark both variants, and enforce quality gates
 
-- location and incident type;
-- severity and number of people affected;
-- requested resources;
-- duplicate-report consolidation; and
-- measured transcription latency and real-time factor.
+## Architecture Overview
+
+### Physical-AI Response Loop
 
 ```mermaid
 flowchart LR
-    A[Radio or microphone audio] --> B[Q5_1 whisper.cpp on Arm]
-    B --> C[Safety-aware extraction]
-    C --> D[Operator review]
-    D --> E[Priority and dispatch workflow]
+    SENSOR[Radio, WAV upload, or microphone] --> VALIDATE[WAV validation]
+    VALIDATE --> WHISPER[Q5_1 whisper.cpp on Arm64]
+    WHISPER --> EXTRACT[Safety-aware field extraction]
+    EXTRACT --> REVIEW{Human review}
+    REVIEW -->|Correct or confirm| INCIDENT[Persistent incident]
+    INCIDENT --> PRIORITY[Priority queue]
+    PRIORITY --> DISPATCH[Assign and dispatch]
+    INCIDENT --> AUDIT[Report history and audit trail]
 ```
 
-## What was optimized for Arm
+### System Architecture
 
-ReliefRelay's optimization is a reproducible stack rather than an architecture
-label:
+```mermaid
+graph TB
+    subgraph "FIELD INPUT"
+        FIXTURE[Synthetic radio fixtures]
+        UPLOAD[WAV upload]
+        MIC[Browser microphone]
+    end
 
-1. Pin and checksum-verify `whisper.cpp` v1.9.2 and Whisper Tiny English.
-2. Generate a Q5_1 model from the verified full-precision model on Arm64.
-3. Use the native Arm CPU backend and platform acceleration while bounding
-   inference parallelism for stable tail latency.
-4. Keep extraction, review, persistence, and routing local so audio never needs
-   an external inference service.
-5. Fail CI when provenance, environment parity, absolute quality, field
-   accuracy, model-size reduction, or latency limits are violated.
+    subgraph "LOCAL ARM RUNTIME"
+        API[FastAPI service]
+        GUARD[Format, size, queue, and timeout guards]
+        CPP[whisper.cpp v1.9.2]
+        MODEL[Whisper Tiny English Q5_1]
+        RULES[Deterministic incident extractor]
+    end
 
-The result is a **58.6% smaller model** with unchanged median latency, slightly
-lower p95 latency, lower WER, and higher structured-field accuracy on the
-included degraded-radio corpus.
+    subgraph "OPERATOR CONTROL"
+        UI[Response dashboard]
+        HUMAN[Human review gate]
+        LIFECYCLE[Incident lifecycle]
+    end
 
-## Native Arm64 evidence
+    subgraph "LOCAL EVIDENCE"
+        STORE[(SQLite WAL store)]
+        HISTORY[Reports and audit events]
+        BENCH[Benchmark and provenance artifacts]
+        CI[Native Arm64 CI]
+    end
 
-The included benchmark contains three synthetic emergency scenarios, three
-voices, and three signal conditions: clear, radio, and severe.
+    FIXTURE --> API
+    UPLOAD --> API
+    MIC --> API
+    API --> GUARD
+    GUARD --> CPP
+    MODEL --> CPP
+    CPP --> RULES
+    RULES --> UI
+    UI --> HUMAN
+    HUMAN --> LIFECYCLE
+    LIFECYCLE --> STORE
+    STORE --> HISTORY
+    MODEL --> BENCH
+    CPP --> BENCH
+    BENCH --> CI
+
+    style HUMAN fill:#e4f0e8,stroke:#146b48,stroke-width:2px
+    style MODEL fill:#eef0ff,stroke:#4e5ba6,stroke-width:2px
+    style STORE fill:#f4f8dc,stroke:#72851f,stroke-width:2px
+```
+
+### Incident Lifecycle
+
+```mermaid
+stateDiagram-v2
+    [*] --> needs_review: report ingested
+    needs_review --> acknowledged: operator confirms
+    acknowledged --> assigned: responder selected
+    assigned --> dispatched: team sent
+    dispatched --> resolved: response completed
+    needs_review --> rejected: false or non-actionable
+    acknowledged --> needs_review: higher-severity report
+    assigned --> needs_review: higher-severity report
+```
+
+Resolved and rejected incidents never absorb later reports. A new report may
+return an open incident to review when it raises the known severity, but it may
+not silently lower the highest recorded severity.
+
+## The Problem
+
+Emergency field reports arrive under hostile conditions: weak connectivity,
+background noise, damaged radios, limited compute, and operators already under
+pressure. A cloud speech endpoint introduces another dependency, while an
+unreviewed transcript can create a false incident, merge unrelated reports, or
+send the wrong resource.
+
+The useful output is not text alone. Responders need a trustworthy operational
+record containing:
+
+- where the event is happening;
+- what type of incident was reported;
+- how severe it appears;
+- how many people are affected;
+- which resource was requested; and
+- who reviewed, assigned, and changed the event.
+
+## The Solution
+
+ReliefRelay creates a local, reviewable response record:
+
+1. An operator selects a bundled fixture, uploads a WAV, or records a microphone report.
+2. The API validates the audio before allowing it into the inference queue.
+3. A quantized Whisper model transcribes it through a pinned local `whisper.cpp` runtime.
+4. Deterministic safeguards extract location, incident, severity, people, and requested resources.
+5. The dashboard exposes the transcript, confidence, warnings, and every field for correction.
+6. A human confirms the draft and controls acknowledgement, assignment, dispatch, and resolution.
+7. SQLite retains the original report, processing metadata, corrections, and lifecycle audit events.
+
+The result is an operational edge workflow rather than a transcription demo.
+
+## Product Features
+
+### Local Voice Intake
+
+- Included clear, radio, and severe WAV scenarios
+- Browser microphone capture and WAV upload
+- 16-bit PCM, channel, sample-rate, empty-file, extension, and 25 MB validation
+- Measured inference duration and real-time factor on every audio report
+- Temporary upload cleanup after success or failure
+
+### Safety-Aware Incident Extraction
+
+- Context-aware matching against configured response locations
+- Incident negation handling to reduce false alarms
+- Compound number-word and numeric address parsing
+- Resource extraction only when request intent is present
+- Confidence, missing-field warnings, and mandatory review state
+- Conservative fingerprints that do not merge unrelated unknown reports
+
+### Human-Reviewed Operations
+
+- Editable transcript and structured fields
+- Severity-ranked incident queue
+- Acknowledge, assign, dispatch, resolve, and reject actions
+- Report-level source and processing history
+- Operator identity and timestamped audit events
+- Deduplication limited to similar open incidents inside a configurable window
+
+### Edge Runtime Protection
+
+- Optional bearer-token protection for operational API routes
+- Constant-time token comparison
+- Bounded concurrent inference and queue wait
+- Per-transcription process timeout
+- Arm-aware thread default capped at six for stable tail latency
+- Content Security Policy and browser security headers
+- One application worker per SQLite database for predictable local operation
+
+## Arm Optimization Evidence
+
+ReliefRelay does not treat “runs on Arm” as an optimization result. The
+repository pins the runtime and model, generates the optimized artifact from a
+verified baseline, measures both models under the same conditions, and fails
+CI when provenance, quality, footprint, or latency boundaries are violated.
+
+![Native Arm64 optimization comparison](docs/images/arm64-optimization.png)
 
 | Apple M4 Arm64, 6 threads | Full precision | Q5_1 | Change |
-| --- | ---: | ---: | ---: |
-| Model size | 74.10 MiB | 30.68 MiB | 58.60% smaller |
+|---|---:|---:|---:|
+| Model size | 74.10 MiB | 30.68 MiB | **58.60% smaller** |
 | Median inference | 0.273 s | 0.273 s | unchanged |
 | P95 inference | 0.307 s | 0.302 s | 1.63% lower |
 | Mean word error rate | 11.23% | 8.79% | 2.44 pp lower |
 | Structured-field accuracy | 97.78% | 100.00% | 2.22 pp higher |
 
-This comparison uses two warmups and seven runs for every fixture: **126 native
-Arm64 inferences** total across the two models. Full reports, individual
-timings, model hashes, runtime metadata, and quantization provenance are
-committed under [`docs/benchmarks/`](docs/benchmarks/README.md). The same quality
-guard also runs on a native `ubuntu-24.04-arm` GitHub Actions runner.
+The submitted comparison uses two warmups and seven measured runs for each of
+nine fixtures under both models: **126 native Arm64 inferences**. The primary
+optimization win is footprint. Quality improvements were observed on this
+small deterministic corpus and are not presented as universal model gains.
 
-## Quick start
+The complete evidence bundle includes:
 
-Prerequisites:
+- safe runtime and hardware metadata;
+- baseline and Q5_1 model hashes;
+- quantization provenance and duration;
+- every transcript and individual inference timing;
+- aggregate latency, real-time factor, WER, and structured-field accuracy; and
+- every quality-guard decision.
 
-- Python 3.12
-- [uv](https://docs.astral.sh/uv/)
+See [`docs/benchmarks/`](docs/benchmarks/README.md) for the raw evidence and
+exact reproduction procedure.
 
-Install the locked dependencies:
+## Judge Quick Start
+
+No API key or cloud AI account is required. Requirements are Python 3.12+, Git,
+CMake, and [`uv`](https://docs.astral.sh/uv/).
 
 ```bash
+git clone https://github.com/Sai-Krishna99/reliefrelay.git
+cd reliefrelay
 uv sync --locked --dev
-```
-
-Download and verify the pinned `whisper.cpp` v1.9.2 CPU runtime and quantized
-Tiny English model:
-
-```bash
 uv run python scripts/setup_whisper_runtime.py
+uv run uvicorn reliefrelay.api:app --app-dir src --host 127.0.0.1 --port 8000
 ```
 
-The setup script supports Windows x64, Ubuntu x64, Ubuntu Arm64, and macOS
-Arm64/x64. macOS builds the pinned, checksum-verified source with CMake so the
-native Metal-capable runtime matches the pinned version. Downloaded runtime
-files and models remain git-ignored.
+Open <http://127.0.0.1:8000> and follow this path:
 
-Start the application:
+1. Confirm the dashboard reports `OPERATIONAL` and displays the Arm architecture.
+2. Select **Harbor School Medical** and the **Severe** signal condition.
+3. Play the degraded audio, then select **Transcribe + Review Report**.
+4. Inspect the measured inference time, transcript, confidence, and extracted fields.
+5. Correct or confirm the AI draft, assign a response team, and acknowledge it.
+6. Open the incident and inspect its original report and audit history.
+7. Move it through assigned, dispatched, and resolved states.
 
-```bash
-uv run uvicorn reliefrelay.api:app --app-dir src --host 0.0.0.0 --port 8000
-```
+The WAV and resulting operational data remain on the ReliefRelay host.
 
-Open `http://127.0.0.1:8000`, select a scenario and signal condition, then click
-**Transcribe + Review Report**. You can also upload a WAV file or capture a
-microphone recording directly in the browser. Confirm or correct every field
-before acknowledging or assigning the incident.
-
-Operational data is stored in `.local/reliefrelay.db` by default and survives
-application restarts.
-
-## Validate
-
-Run the tests:
+## Reproducible Testing
 
 ```bash
+# Complete unit and API integration suite
 uv run pytest -q -p no:cacheprovider
+
+# Verify Python modules compile
+uv run python -m compileall -q src scripts
+
+# Validate browser JavaScript syntax
+node --check src/reliefrelay/static/app.js
+
+# Build source and wheel distributions
+uv build
+
+# Validate the container configuration
+docker compose config --quiet
 ```
 
-Run the complete audio benchmark:
+Current verified result:
 
-```bash
-uv run python scripts/benchmark_audio.py --output artifacts/whisper-benchmark.json
+```text
+Tests       35 passed
+Arm64 CI    passed on native ubuntu-24.04-arm
+Package     source distribution and wheel built
+Container   Compose configuration and non-root runtime verified
 ```
 
-The output records architecture, processor, model, per-fixture transcript,
-word error rate, inference time, real-time factor, and structured-field
-accuracy.
+Coverage includes extraction negation, quantities, locations, resource intent,
+deduplication, severity escalation, review corrections, incident state
+transitions, report history, audit events, authentication, WAV validation,
+queue overload, transcription failures, API behavior, benchmark parity, model
+provenance, model footprint, latency, WER, and structured-field quality gates.
 
-Reproduce the full-precision versus Q5_1 comparison locally:
+## Benchmark Reproduction
 
 ```bash
 uv run python scripts/setup_whisper_runtime.py \
   --comparison --metadata-output artifacts/quantization.json
+
+uv run python scripts/runtime_probe.py \
+  --require-arm64 --output artifacts/runtime.json
+
 uv run python scripts/benchmark_audio.py \
-  --model models/whisper/ggml-tiny.en.bin --label full-precision \
-  --runs 5 --warmups 1 --output artifacts/baseline.json
+  --model models/whisper/ggml-tiny.en.bin \
+  --label full-precision --threads 6 --runs 7 --warmups 2 \
+  --output artifacts/baseline.json
+
 uv run python scripts/benchmark_audio.py \
   --model models/whisper/ggml-tiny.en-q5_1-reliefrelay.bin \
-  --label q5_1-reliefrelay --runs 5 --warmups 1 \
+  --label q5_1-reliefrelay --threads 6 --runs 7 --warmups 2 \
   --output artifacts/optimized.json
+
 uv run python scripts/compare_benchmarks.py \
   artifacts/baseline.json artifacts/optimized.json \
   --quantization artifacts/quantization.json \
@@ -151,61 +312,176 @@ uv run python scripts/compare_benchmarks.py \
   --markdown-output artifacts/comparison.md
 ```
 
-To require a native Arm64 environment:
+The comparison exits non-zero if the two reports use mismatched environments,
+model provenance is invalid, Q5_1 is not smaller, structured accuracy falls
+below 95%, optimized WER exceeds 20%, WER regresses by more than two percentage
+points, median latency regresses by more than 5%, or p95 regresses by more than
+10%.
 
-```bash
-uv run python scripts/runtime_probe.py --require-arm64 --output artifacts/arm64-runtime.json
-```
+## Commands
 
-## Runtime configuration
+| Command | Purpose |
+|---|---|
+| `uv sync --locked --dev` | Install the exact development dependency lock |
+| `uv run python scripts/setup_whisper_runtime.py` | Provision the verified local Whisper runtime and Q5_1 model |
+| `uv run uvicorn reliefrelay.api:app --app-dir src --port 8000` | Start the dashboard and API |
+| `uv run pytest -q -p no:cacheprovider` | Run all automated tests |
+| `uv run python scripts/benchmark_audio.py` | Benchmark local inference and task quality |
+| `uv run python scripts/runtime_probe.py --require-arm64` | Validate and record an Arm64 runtime |
+| `uv build` | Build the Python source and wheel distributions |
+| `docker compose up --build -d` | Start the containerized single-node service |
 
-The setup script installs the default local paths automatically. They can be
-overridden for a VM, container, or custom build:
-
-| Variable | Purpose |
-| --- | --- |
-| `RELIEFRELAY_WHISPER_BINARY` | Path to `whisper-cli` |
-| `RELIEFRELAY_WHISPER_MODEL` | Path to a compatible GGML model |
-| `RELIEFRELAY_WHISPER_THREADS` | CPU inference threads; defaults to available CPUs capped at `6` |
-| `RELIEFRELAY_WHISPER_TIMEOUT_SECONDS` | Maximum seconds for one transcription; default `120` |
-| `RELIEFRELAY_DATABASE` | Persistent SQLite database path |
-| `RELIEFRELAY_API_TOKEN` | Optional bearer token; set for shared deployments |
-| `RELIEFRELAY_MAX_CONCURRENT_INFERENCE` | Maximum simultaneous Whisper jobs; default `1` |
-| `RELIEFRELAY_QUEUE_TIMEOUT_SECONDS` | Maximum inference queue wait; default `5` |
-| `RELIEFRELAY_DEDUPLICATION_WINDOW_HOURS` | Window for merging similar open reports; default `24` |
-
-See [`.env.example`](.env.example) for the complete configuration and
-[`docs/OPERATIONS.md`](docs/OPERATIONS.md) for deployment, backup, access, and
-incident-workflow guidance.
-
-## Audio fixtures
-
-The nine WAV files under `src/reliefrelay/static/audio/` are synthetic and do
-not depict real events or people. Their exact transcripts, expected incident
-fields, processing profiles, SHA-256 hashes, and provenance are recorded in
-[`manifest.json`](src/reliefrelay/static/audio/manifest.json).
-
-The voices were generated with the Apache-2.0-licensed Kokoro-82M model through
-the MIT-licensed `kokoro-onnx` runner. Radio degradation is generated locally
-and deterministically by `reliefrelay.audio_fixtures`.
-
-## Project structure
+## API Surface
 
 ```text
-src/reliefrelay/            API, inference adapter, extraction and dashboard
-src/reliefrelay/static/     Browser UI and benchmark WAV fixtures
-scripts/                    Runtime setup, fixture generation and benchmarks
-tests/                      Unit, API, fixture and pipeline validation
-.github/workflows/          Native Arm64 CI evidence
+GET    /api/health
+GET    /api/incidents?include_closed=true
+GET    /api/incidents/{incident_id}
+PATCH  /api/incidents/{incident_id}
+POST   /api/reports/text
+POST   /api/reports/audio
 ```
 
-## Scope
+When `RELIEFRELAY_API_TOKEN` is configured, all operational `/api/*` routes
+require `Authorization: Bearer <token>` except `/api/health`. Interactive API
+documentation is available at `/docs` while the FastAPI service is running.
 
-ReliefRelay is a decision-support tool. It does not replace emergency dispatch
-procedures. Machine-extracted incidents enter `needs_review`; original reports
-and operator changes are retained in an audit history. The known-location
-resolver remains deliberately scoped to the configured response district.
+## Configuration
+
+| Variable | Purpose | Default |
+|---|---|---|
+| `RELIEFRELAY_DATABASE` | SQLite operational database | `.local/reliefrelay.db` |
+| `RELIEFRELAY_API_TOKEN` | Optional operator bearer token | unset |
+| `RELIEFRELAY_WHISPER_BINARY` | Path to `whisper-cli` | auto-discovered |
+| `RELIEFRELAY_WHISPER_MODEL` | Path to a compatible GGML model | local Q5_1 model |
+| `RELIEFRELAY_WHISPER_THREADS` | Inference threads | available CPUs, capped at `6` |
+| `RELIEFRELAY_WHISPER_TIMEOUT_SECONDS` | Maximum transcription duration | `120` seconds |
+| `RELIEFRELAY_MAX_CONCURRENT_INFERENCE` | Simultaneous Whisper jobs | `1` |
+| `RELIEFRELAY_QUEUE_TIMEOUT_SECONDS` | Maximum inference queue wait | `5` seconds |
+| `RELIEFRELAY_DEDUPLICATION_WINDOW_HOURS` | Similar-open-report merge window | `24` hours |
+
+See [`.env.example`](.env.example) for a copyable template and
+[`docs/OPERATIONS.md`](docs/OPERATIONS.md) for backup, access, deployment, and
+incident-workflow guidance.
+
+## Container Deployment
+
+The image runs as a non-root user and stores SQLite state in `/data`. Model and
+runtime assets are intentionally not baked into the image; provision them on
+the target Linux host and mount them through the included Compose file.
+
+```bash
+uv run python scripts/setup_whisper_runtime.py
+docker compose up --build -d
+docker compose logs -f reliefrelay
+```
+
+The default Compose port is loopback-only. Shared deployments should set a long
+API token and place ReliefRelay behind TLS or a private gateway.
+
+## Project Structure
+
+```text
+reliefrelay/
+├── src/reliefrelay/             # API, domain model, extraction, store, and pipeline
+│   └── static/                  # Dashboard and deterministic audio fixtures
+├── scripts/                     # Runtime setup, fixture generation, and benchmarks
+├── tests/                       # Unit, API, pipeline, store, and benchmark tests
+├── docs/benchmarks/             # Committed native Arm64 evidence bundle
+├── docs/images/                 # Dashboard and optimization proof images
+├── docs/OPERATIONS.md           # Deployment and recovery guidance
+├── .github/workflows/           # Native Arm64 validation workflow
+├── Dockerfile
+├── compose.yaml
+├── pyproject.toml
+└── .env.example
+```
+
+## Audio Fixture Provenance
+
+The nine bundled WAVs are deterministic synthetic fixtures: three emergency
+scenarios, three voices, and clear, radio, or severe signal profiles. They do
+not depict real events or people.
+
+Exact source sentences, expected fields, voice provenance, signal
+transformations, processing parameters, and SHA-256 hashes are recorded in
+[`manifest.json`](src/reliefrelay/static/audio/manifest.json). The voices were
+generated with the Apache-2.0-licensed Kokoro-82M model through the MIT-licensed
+`kokoro-onnx` runner.
+
+## Safety and Operational Boundaries
+
+- ReliefRelay is decision support, not an autonomous emergency dispatch system.
+- Every machine-created incident starts in `needs_review`.
+- The transcript and all extracted fields remain editable before acknowledgement.
+- Original source reports are retained when operators make corrections.
+- Open incidents may merge only within the configured time window and fingerprint.
+- Resolved and rejected incidents never absorb later reports.
+- The highest known severity cannot be silently reduced by a later report.
+- Synthetic benchmark results do not establish population-level speech accuracy.
+- Shared deployments require TLS, stronger organizational identity, retention rules, monitoring, and security review.
+- The configured location resolver is deliberately limited to the response district.
+
+## Why ReliefRelay Is Different
+
+| Capability | Basic speech-to-text | Cloud incident pipeline | ReliefRelay |
+|---|:---:|:---:|:---:|
+| Works without a cloud inference API | ✅ | ❌ | ✅ |
+| Produces structured incident fields | ❌ | ✅ | ✅ |
+| Requires human review before action | ❌ | ⚠️ | ✅ |
+| Preserves original reports and corrections | ❌ | ⚠️ | ✅ |
+| Prevents closed-incident deduplication | ❌ | ⚠️ | ✅ |
+| Includes reproducible model provenance | ❌ | ⚠️ | ✅ |
+| Measures both speech and task accuracy | ❌ | ⚠️ | ✅ |
+| Enforces optimization quality in native Arm64 CI | ❌ | ⚠️ | ✅ |
+
+The novelty is the complete loop: **physical audio input + optimized local Arm
+inference + safety-aware structuring + human authority + persistent response
+history + reproducible proof.**
+
+## Production Boundary
+
+ReliefRelay is a working, end-to-end hackathon product intended for local or
+single-node evaluation. Before a real emergency organization handles sensitive
+reports, a deployment should add organizational identity and role-based access,
+managed database backups, encryption and retention policy, observability,
+multilingual field validation, abuse controls, disaster-recovery exercises, and
+integration with an authorized dispatch or radio gateway.
+
+This boundary is deliberate: the repository demonstrates a credible local
+response workflow without claiming that synthetic evaluation equals field
+certification.
+
+## Future Enhancements
+
+- Validate performance and energy use on Raspberry Pi 5 and Arm Neoverse systems
+- Build a consented, multilingual and multi-accent field-radio corpus
+- Add coordinate-aware geospatial resolution and map layers
+- Integrate authorized radio gateways and outbound dispatch notifications
+- Replace the shared token with organizational identity and role controls
+- Migrate multi-node deployments from SQLite to PostgreSQL
+- Add offline replication between disconnected response posts
+- Measure energy per report alongside latency, quality, and model footprint
+
+## Arm Create Submission
+
+- **Track:** Physical AI
+- **Platform:** native Arm64 edge compute
+- **Core optimization:** Whisper Tiny English Q5_1 through pinned `whisper.cpp`
+- **Repository:** <https://github.com/Sai-Krishna99/reliefrelay>
+- **Evidence:** [`docs/benchmarks/`](docs/benchmarks/README.md)
+- **License:** Apache-2.0
+
+The public repository contains all source code, synthetic assets, setup
+instructions, screenshots, raw benchmark reports, provenance, and native Arm64
+validation required to reproduce the project.
 
 ## License
 
-Licensed under the Apache License 2.0. See [`LICENSE`](LICENSE).
+[Apache License 2.0](LICENSE)
+
+---
+
+**Built for the Arm Create: AI Optimization Challenge — Physical AI.**
+
+*Hear the report. Recover the signal. Review the decision. Relay the response.*
