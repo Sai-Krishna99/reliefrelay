@@ -1,0 +1,9 @@
+.git
+.github
+.venv
+.local
+.uv-cache
+artifacts
+models
+__pycache__
+*.pyc

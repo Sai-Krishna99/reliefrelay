@@ -62,3 +62,49 @@ def test_degraded_urgency_and_resource_language_remains_actionable() -> None:
 
     assert incident.severity == "high"
     assert incident.requested_resource == "medical team"
+
+
+def test_negated_fire_is_not_routed_as_critical_fire() -> None:
+    extractor = EmergencyReportExtractor(known_locations=RESPONSE_LOCATIONS)
+
+    incident = extractor.extract("No fire at North Clinic. Situation is safe.")
+
+    assert incident.incident_type == "other"
+    assert incident.severity == "standard"
+
+
+def test_compound_number_words_are_counted_as_one_quantity() -> None:
+    extractor = EmergencyReportExtractor(known_locations=RESPONSE_LOCATIONS)
+
+    incident = extractor.extract("Twenty five people injured at Harbor School.")
+
+    assert incident.people_affected == 25
+
+
+def test_incident_water_is_not_mistaken_for_requested_water() -> None:
+    extractor = EmergencyReportExtractor(known_locations=RESPONSE_LOCATIONS)
+
+    incident = extractor.extract("Riverside Shelter reporting flood water.")
+
+    assert incident.incident_type == "flood"
+    assert incident.requested_resource is None
+
+
+def test_numeric_street_address_is_preserved() -> None:
+    extractor = EmergencyReportExtractor(known_locations=RESPONSE_LOCATIONS)
+
+    incident = extractor.extract(
+        "Flooding at 123 Main Street. Six residents stranded."
+    )
+
+    assert incident.location == "123 Main Street"
+
+
+def test_extraction_assessment_requires_operator_review() -> None:
+    extractor = EmergencyReportExtractor(known_locations=RESPONSE_LOCATIONS)
+
+    assessment = extractor.extract_with_assessment("Requesting assistance.")
+
+    assert assessment.review_required is True
+    assert assessment.confidence < 0.5
+    assert "Location requires operator confirmation" in assessment.warnings

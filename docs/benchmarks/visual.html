@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ReliefRelay Arm64 optimization evidence</title>
+  <style>
+    :root { --bg:#06100d; --panel:#0c1b16; --ink:#edf5ef; --muted:#84988e; --lime:#c7f36b; --line:#284238; --blue:#66d7d1; }
+    * { box-sizing:border-box; }
+    body { width:1600px; height:900px; margin:0; overflow:hidden; color:var(--ink); background:radial-gradient(circle at 70% 0, #17352a, transparent 38%),var(--bg); font-family:Inter,ui-sans-serif,system-ui,sans-serif; }
+    main { height:100%; padding:70px 82px; display:grid; grid-template-rows:auto 1fr auto; gap:42px; }
+    header { display:flex; align-items:flex-start; justify-content:space-between; }
+    .brand { display:flex; gap:18px; align-items:center; }
+    .mark { display:flex; gap:5px; align-items:flex-end; width:44px; height:46px; transform:skew(-10deg); }
+    .mark i { width:10px; background:var(--lime); }
+    .mark i:nth-child(1){height:24px}.mark i:nth-child(2){height:42px}.mark i:nth-child(3){height:32px}
+    .brand b { display:block; font-size:23px; letter-spacing:.15em; }
+    .brand small,.meta { color:var(--muted); font-size:13px; letter-spacing:.16em; text-transform:uppercase; }
+    .meta { text-align:right; line-height:1.8; }
+    .content { display:grid; grid-template-columns:1.15fr 1fr; gap:70px; align-items:center; }
+    h1 { margin:0; max-width:780px; font-family:Georgia,serif; font-size:74px; font-weight:400; line-height:.98; letter-spacing:-.04em; }
+    h1 em { color:var(--lime); font-weight:400; }
+    .lede { max-width:700px; margin:25px 0 0; color:#a8b8b0; font-size:20px; line-height:1.55; }
+    .hero-metric { margin-top:38px; display:flex; align-items:baseline; gap:18px; }
+    .hero-metric strong { color:var(--lime); font-family:Georgia,serif; font-size:94px; font-weight:400; line-height:.8; }
+    .hero-metric span { max-width:180px; font-size:16px; font-weight:800; line-height:1.3; letter-spacing:.08em; text-transform:uppercase; }
+    .table { border:1px solid var(--line); background:rgba(7,20,15,.82); box-shadow:0 30px 80px rgba(0,0,0,.25); }
+    .row { display:grid; grid-template-columns:1.25fr .8fr .8fr; align-items:center; min-height:72px; padding:0 25px; border-bottom:1px solid var(--line); }
+    .row:last-child { border-bottom:0; }
+    .row.header { min-height:52px; color:var(--muted); font-size:11px; font-weight:800; letter-spacing:.13em; text-transform:uppercase; }
+    .row span:not(:first-child) { text-align:right; font-variant-numeric:tabular-nums; }
+    .row b { color:var(--lime); font-size:20px; }
+    .row small { display:block; margin-top:4px; color:var(--muted); font-size:11px; }
+    footer { display:flex; align-items:center; justify-content:space-between; padding-top:24px; border-top:1px solid var(--line); color:var(--muted); font-size:13px; }
+    footer strong { color:var(--blue); letter-spacing:.1em; text-transform:uppercase; }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div class="brand"><span class="mark"><i></i><i></i><i></i></span><span><b>RELIEFRELAY</b><small>Native Arm64 optimization evidence</small></span></div>
+      <div class="meta">Physical AI · Apple M4 Arm64<br>whisper.cpp v1.9.2 · 6 threads</div>
+    </header>
+    <section class="content">
+      <div>
+        <h1>Less model.<br><em>Same response speed.</em></h1>
+        <p class="lede">Q5_1 compresses local emergency-radio intelligence for constrained Arm edge systems while preserving the operational fields responders need.</p>
+        <div class="hero-metric"><strong>58.6%</strong><span>smaller on-device model</span></div>
+      </div>
+      <div class="table">
+        <div class="row header"><span>Metric</span><span>Full precision</span><span>Q5_1</span></div>
+        <div class="row"><span>Model footprint<small>Verified GGML artifacts</small></span><span>74.10 MiB</span><span><b>30.68 MiB</b></span></div>
+        <div class="row"><span>Median inference<small>63 measured runs per model</small></span><span>0.273 s</span><span><b>0.273 s</b></span></div>
+        <div class="row"><span>P95 inference<small>Same runtime and corpus</small></span><span>0.307 s</span><span><b>0.302 s</b></span></div>
+        <div class="row"><span>Mean word error rate<small>Clear, radio, and severe audio</small></span><span>11.23%</span><span><b>8.79%</b></span></div>
+        <div class="row"><span>Structured fields<small>Location, type, severity, people, resource</small></span><span>97.78%</span><span><b>100.00%</b></span></div>
+      </div>
+    </section>
+    <footer><span>126 measured native Arm64 inferences · hashes, raw timings, transcripts, and guard decisions committed</span><strong>Quality guard: Pass</strong></footer>
+  </main>
+</body>
+</html>

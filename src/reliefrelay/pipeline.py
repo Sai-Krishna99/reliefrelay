@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
 
-from reliefrelay.domain import Incident
+from reliefrelay.domain import ExtractionAssessment, Incident
 from reliefrelay.extraction import EmergencyReportExtractor
 from reliefrelay.transcription import TranscriptResult
 
@@ -15,6 +15,7 @@ class Transcriber(Protocol):
 class PipelineResult:
     incident: Incident
     transcription: TranscriptResult
+    assessment: ExtractionAssessment
 
 
 class AudioReportPipeline:
@@ -28,5 +29,9 @@ class AudioReportPipeline:
 
     def process(self, audio_path: Path) -> PipelineResult:
         transcription = self._transcriber.transcribe(audio_path)
-        incident = self._extractor.extract(transcription.text)
-        return PipelineResult(incident=incident, transcription=transcription)
+        assessment = self._extractor.extract_with_assessment(transcription.text)
+        return PipelineResult(
+            incident=assessment.incident,
+            transcription=transcription,
+            assessment=assessment,
+        )

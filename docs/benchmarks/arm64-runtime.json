@@ -1,0 +1,12 @@
+{
+  "architecture": "arm64",
+  "arm64": true,
+  "operating_system": "Darwin",
+  "operating_system_release": "25.5.0",
+  "processor": "Apple M4",
+  "logical_cpus": 10,
+  "recommended_inference_threads": 6,
+  "total_memory_bytes": 17179869184,
+  "python": "3.13.9",
+  "captured_at": "2026-08-13T02:32:16.675058+00:00"
+}

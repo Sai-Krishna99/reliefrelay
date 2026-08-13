@@ -1,0 +1,92 @@
+{
+  "benchmark": "ReliefRelay Whisper Tiny English optimization",
+  "baseline": {
+    "label": "full-precision",
+    "architecture": "arm64",
+    "processor": "Apple M4",
+    "operating_system": "Darwin",
+    "platform_release": "25.5.0",
+    "model": "ggml-tiny.en.bin",
+    "model_bytes": 77704715,
+    "model_mib": 74.1,
+    "model_sha256": "921e4cf8686fdd993dcd081a5da5b6c365bfde1162e72b08d75ac75289920b1f",
+    "binary": "whisper-cli",
+    "engine": "whisper.cpp",
+    "threads": 6,
+    "runs": 7,
+    "warmups": 2,
+    "commit": "local"
+  },
+  "optimized": {
+    "label": "q5_1-reliefrelay",
+    "architecture": "arm64",
+    "processor": "Apple M4",
+    "operating_system": "Darwin",
+    "platform_release": "25.5.0",
+    "model": "ggml-tiny.en-q5_1-reliefrelay.bin",
+    "model_bytes": 32166155,
+    "model_mib": 30.68,
+    "model_sha256": "20997113f1fa483058c65fa5959a1027887a823db39ac5de6c78c272e2dd5aac",
+    "binary": "whisper-cli",
+    "engine": "whisper.cpp",
+    "threads": 6,
+    "runs": 7,
+    "warmups": 2,
+    "commit": "local"
+  },
+  "metrics": {
+    "model_size_reduction_percent": 58.6,
+    "median_latency_reduction_percent": 0.0,
+    "p95_latency_reduction_percent": 1.63,
+    "median_real_time_factor_reduction_percent": -1.27,
+    "word_error_rate_delta": -0.0244,
+    "structured_field_accuracy_delta": 0.0222
+  },
+  "quality_guard": {
+    "passed": true,
+    "matching_environment": true,
+    "quantization_provenance_verified": true,
+    "matching_fixtures": true,
+    "max_word_error_rate_regression": 0.02,
+    "max_optimized_word_error_rate": 0.2,
+    "min_structured_field_accuracy": 0.95,
+    "max_latency_regression": 0.05,
+    "max_p95_latency_regression": 0.1,
+    "word_error_rate_within_limit": true,
+    "structured_accuracy_preserved": true,
+    "absolute_quality_passed": true,
+    "performance_within_limit": true
+  },
+  "summaries": {
+    "baseline": {
+      "fixture_count": 9,
+      "sample_count": 63,
+      "median_inference_seconds": 0.273,
+      "p95_inference_seconds": 0.307,
+      "median_real_time_factor": 0.0316,
+      "mean_word_error_rate": 0.1123,
+      "structured_field_accuracy": 0.9778
+    },
+    "optimized": {
+      "fixture_count": 9,
+      "sample_count": 63,
+      "median_inference_seconds": 0.273,
+      "p95_inference_seconds": 0.302,
+      "median_real_time_factor": 0.032,
+      "mean_word_error_rate": 0.0879,
+      "structured_field_accuracy": 1.0
+    }
+  },
+  "quantization": {
+    "quantization": "q5_1",
+    "duration_seconds": 0.672,
+    "baseline_model": "ggml-tiny.en.bin",
+    "baseline_bytes": 77704715,
+    "baseline_sha256": "921e4cf8686fdd993dcd081a5da5b6c365bfde1162e72b08d75ac75289920b1f",
+    "optimized_model": "ggml-tiny.en-q5_1-reliefrelay.bin",
+    "optimized_bytes": 32166155,
+    "optimized_sha256": "20997113f1fa483058c65fa5959a1027887a823db39ac5de6c78c272e2dd5aac",
+    "whisper_cpp_version": "1.9.2",
+    "architecture": "arm64"
+  }
+}
