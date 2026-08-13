@@ -13,9 +13,8 @@ Built for the **Arm Create: AI Optimization Challenge — Physical AI track**.
 ReliefRelay consumes audio sensor input on nearby Arm edge compute and produces
 human-reviewed priority and dispatch decisions without a cloud AI dependency.
 
-> **Judges:** start with the [two-minute evaluation guide](docs/JUDGING.md),
-> inspect the [native Arm64 evidence](docs/benchmarks/arm64-comparison.md), or
-> use the [three-minute demo script](docs/DEMO_SCRIPT.md).
+> **Judges:** start with the [submission overview](docs/SUBMISSION.md) or inspect
+> the [native Arm64 evidence](docs/benchmarks/arm64-comparison.md).
 
 ![ReliefRelay response operations dashboard](docs/images/reliefrelay-dashboard.png)
 

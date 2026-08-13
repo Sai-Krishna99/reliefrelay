@@ -108,7 +108,7 @@ footprint and retained task quality, not an invented latency claim.
 - Persistent incident lifecycle, source report history, human review, and
   auditable operator actions.
 - Reproducible native Arm64 evidence and CI quality enforcement.
-- 35 passing automated tests plus a verified non-root container deployment.
+- A passing automated test suite plus a verified non-root container deployment.
 
 ## What we learned
 
